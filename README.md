@@ -12,6 +12,8 @@ Minecraft Bedrock için Windows mod ve paket yöneticisi. Güncel sürüm: **v0.
 
 Kurulum dosyası: `BedrockLoader-Setup-v0.15.10-x64.exe`. Windows 10/11 x64 için hazırlanır; .NET çalışma zamanı dahildir. Kurulum kullanıcı hesabına yapılır ve yönetici izni gerektirmez.
 
+[v0.15.10 Windows x64 kurulumunu indir](https://github.com/kokluk/Bedrockloader/releases/download/v0.15.10/BedrockLoader-Setup-v0.15.10-x64.exe)
+
 [Yayınlanan sürümler](https://github.com/kokluk/Bedrockloader/releases)
 
 ## Kaynaktan derleme
@@ -49,4 +51,4 @@ Ayarlar/kayıtlar `%APPDATA%\BedrockLoader`, yerel modlar `%APPDATA%\Minecraft b
 
 Dahili mod deposu şimdilik **Yakında** ekranıdır. Güncelleyicinin dağıtım için erişilebilir bir GitHub Release ve doğrulanabilir kurulum dosyası bulunması gerekir. Depo özel ise anonim erişimle güncelleme alınamaz.
 
-MIT lisansı — Kokluk. Eski v0.12 Windows ZIP'i `downloads/` altında korunur.
+MIT lisansı — Kokluk. Kaynak ağacında hazır EXE, DLL veya dağıtım ZIP'i tutulmaz; çalıştırılabilir paketler yalnızca Releases bölümünde paylaşılır.
