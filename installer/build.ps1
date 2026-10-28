@@ -8,7 +8,7 @@ $workspacePath = Split-Path -Parent $PSScriptRoot
 $projectDir = Join-Path $workspacePath 'BedrockLoader-v0.12'
 if (-not (Test-Path -LiteralPath (Join-Path $projectDir 'KoklukBedrockModloader.csproj'))) { $projectDir = $workspacePath }
 $projectPath = Join-Path $projectDir 'KoklukBedrockModloader.csproj'
-$payloadPath = Join-Path $workspacePath 'installer-payload-v0.15.10'
+$payloadPath = Join-Path $workspacePath 'installer-payload-v0.15.12'
 $setupSource = Join-Path $PSScriptRoot 'BedrockLoader.iss'
 
 if (-not (Test-Path -LiteralPath $IsccPath -PathType Leaf)) {
@@ -21,4 +21,4 @@ if ($LASTEXITCODE -ne 0) { throw 'Application publish failed.' }
 & $IsccPath "/DPayloadDir=$payloadPath" "/DProjectDir=$projectDir" $setupSource
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
 
-Write-Output (Join-Path $workspacePath 'installer-output\BedrockLoader-Setup-v0.15.10-x64.exe')
+Write-Output (Join-Path $workspacePath 'installer-output\BedrockLoader-Setup-v0.15.12-x64.exe')

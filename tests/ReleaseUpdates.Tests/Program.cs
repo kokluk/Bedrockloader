@@ -17,7 +17,7 @@ string Json(string tag = "v0.16", string? digest = null, string? url = null, str
         browser_download_url = url ?? "https://github.com/kokluk/Bedrockloader/releases/download/" + tag + "/setup.exe", digest } }
 });
 string fakeDigest = "sha256:" + new string('a', 64);
-Assert(ReleaseUpdates.ParseVersion("v0.15.10") == ReleaseUpdates.CurrentVersion, "same version is not an update");
+Assert(ReleaseUpdates.ParseVersion("v0.15.12") == ReleaseUpdates.CurrentVersion, "same version is not an update");
 Assert(ReleaseUpdates.ParseVersion("v0.16.0") > ReleaseUpdates.CurrentVersion, "newer version comparison");
 Assert(!ReleaseUpdates.ParseRelease(Json()).CanInstall, "missing hash blocks install");
 Assert(!ReleaseUpdates.ParseRelease(Json(digest: fakeDigest, url: "https://evil.example/setup.exe")).CanInstall, "external installer URL rejected");

@@ -21,7 +21,10 @@ public sealed partial class MainForm
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 110));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         var hero = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 22, Padding = new Padding(18), Margin = new Padding(0, 0, 0, 14) };
-        var launch = MakeButton(T("Launch Minecraft", "Minecraft'ı başlat"), LaunchGame, icon: "play");
+        bool installed = MinecraftInstallation.IsInstalled(settings.ContentPath);
+        var launch = MakeButton(installed ? T("Launch Minecraft", "Minecraft'ı başlat") : T("Install Minecraft", "Minecraft'ı yükle"), LaunchGame, icon: "play");
+        launch.Tag = "minecraft-launch";
+        minecraftLaunchButton = launch;
         launch.Dock = DockStyle.Fill; launch.Font = new Font("Segoe UI", 13, FontStyle.Bold); hero.Controls.Add(launch);
         layout.Controls.Add(hero, 0, 0);
 
@@ -116,7 +119,7 @@ public sealed partial class MainForm
         var version = WrappedText(T($"Version {DisplayVersion} • Windows", $"Sürüm {DisplayVersion} • Windows")); version.Dock = DockStyle.Fill;
         var description = WrappedText(T("Manage your Minecraft Bedrock library in one place. Add local mods, install add-on packs and review your activity.", "Minecraft Bedrock kütüphaneni tek yerden yönet. Yerel modlarını ekle, eklenti paketlerini yükle ve işlem kayıtlarını incele."), 11);
         description.Dock = DockStyle.Fill; description.Padding = new Padding(0, 12, 0, 12);
-        var github = MakeButton(T("Visit kokluk on GitHub", "GitHub'da kokluk"), () => { OpenUrl("https://github.com/kokluk"); LogAction("Opened GitHub profile: kokluk"); }, 220, "external"); github.Tag = "primary";
+        var github = MakeButton("GitHub", () => { OpenUrl("https://github.com/kokluk"); LogAction("Opened GitHub profile: kokluk"); }, 220, "external"); github.Tag = "primary";
         layout.Controls.Add(title, 0, 0); layout.Controls.Add(version, 0, 1); layout.Controls.Add(description, 0, 2); layout.Controls.Add(github, 0, 3);
         card.Controls.Add(layout); page.Controls.Add(card); contentHost.Controls.Add(page);
         AddPageHeading(T("About", "Hakkında"), T("A little about your launcher.", "Yükleyicin hakkında."));

@@ -10,7 +10,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm : Form
 {
-    const string DisplayVersion = "v0.15.10";
+    const string DisplayVersion = "v0.15.12";
     SymbolButton? updateLauncher;
     static readonly HttpClient Http = CreateHttpClient();
     readonly string modsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Minecraft bedrock", "mods");
@@ -105,7 +105,7 @@ public sealed partial class MainForm : Form
     static HttpClient CreateHttpClient()
     {
         var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("BedrockLoader/0.15.10 (Windows; .NET 8)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("BedrockLoader/0.15.12 (Windows; .NET 8)");
         return http;
     }
 
@@ -837,6 +837,7 @@ public sealed partial class MainForm : Form
 
     void LaunchGame()
     {
+        if (!MinecraftInstallation.IsInstalled(settings.ContentPath)) { OpenXboxMinecraftPage(); return; }
         try { Process.Start(new ProcessStartInfo { FileName = "minecraft:", UseShellExecute = true }); }
         catch
         {
@@ -893,7 +894,7 @@ public sealed partial class MainForm : Form
             button.BackColor = Color.FromArgb(220, 55, 65);
             button.ForeColor = Color.White;
         }
-        else if (button.Text.Contains("Minecraft'ı başlat", StringComparison.OrdinalIgnoreCase) || button.Text.Contains("Launch Minecraft", StringComparison.OrdinalIgnoreCase))
+        else if (Equals(button.Tag, "minecraft-launch") || button.Text.Contains("Minecraft'ı başlat", StringComparison.OrdinalIgnoreCase) || button.Text.Contains("Launch Minecraft", StringComparison.OrdinalIgnoreCase))
         {
             // Keep the prominent launch button from the original design.
             button.BackColor = Accent;

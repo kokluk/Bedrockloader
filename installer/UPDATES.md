@@ -1,4 +1,4 @@
-# v0.13 güncelleme kanalı
+﻿# v0.13 güncelleme kanalı
 
 Uygulamadaki üst sol simge veya Ayarlar > Güncellemeleri denetle, güncelleme sayfasını açar. Her uygulama açılışında arka planda bir kez sürüm bilgisi kontrol edilir. Yeni sürüm varsa üst sol simgenin sol üstünde kırmızı “1” bildirimi gösterilir. Kullanıcı ayrıca elle kontrol edebilir; otomatik indirme/kurulum ve zorunlu güncelleme yapılmaz. Güncelleme yoksa veya doğrulanabilir kurulum dosyası yayınlanmamışsa “İndir ve kur” düğmesi gizlenir.
 

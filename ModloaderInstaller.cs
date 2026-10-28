@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net.Http;
 using System.Reflection.PortableExecutable;
 
@@ -35,17 +35,15 @@ public sealed partial class MainForm
             folder = Path.GetFullPath(folder);
             string target = Path.Combine(folder, ModloaderFileName);
             string consent = T(
-                $"Download {ModloaderFileName} from the following link and install it in your Minecraft Content folder?\n\nSource:\n{ModloaderDownloadUrl}\n\nDestination:\n{target}\n\nThe download and installation will only start if you choose Yes.",
-                $"{ModloaderFileName} dosyası aşağıdaki bağlantıdan indirilip Minecraft Content klasörüne kurulsun mu?\n\nKaynak:\n{ModloaderDownloadUrl}\n\nHedef:\n{target}\n\nİndirme ve kurulum yalnızca Evet seçersen başlayacak.");
-            if (MessageBox.Show(this, consent, T("Allow modloader installation?", "Modloader kurulumuna izin veriyor musun?"),
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+                $"Download {ModloaderFileName} from the following link and install it in your Minecraft Content folder?\n\nSource:\n{ModloaderDownloadUrl}\n\nDestination:\n{target}\n\nThe download and installation will only start if you allow installation.",
+                $"{ModloaderFileName} dosyası aşağıdaki bağlantıdan indirilip Minecraft Content klasörüne kurulsun mu?\n\nKaynak:\n{ModloaderDownloadUrl}\n\nHedef:\n{target}\n\nİndirme ve kurulum yalnızca kuruluma izin verirsen başlayacak.");
+            if (ShowThemedPopup(T("Install modloader", "Modloader kurulumu"), consent, confirmation: true) != DialogResult.Yes) return;
 
             bool replaceExisting = File.Exists(target);
-            if (replaceExisting && MessageBox.Show(this,
+            if (replaceExisting && ShowThemedPopup(T("Replace existing file?", "Var olan dosya değiştirilsin mi?"),
                 T($"A file already exists here:\n\n{target}\n\nReplace it with the downloaded modloader? Close Minecraft before continuing.",
                   $"Bu konumda zaten bir dosya var:\n\n{target}\n\nİndirilen modloader ile değiştirilsin mi? Devam etmeden önce Minecraft'ı kapat."),
-                T("Replace existing file?", "Var olan dosya değiştirilsin mi?"), MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+                confirmation: true) != DialogResult.Yes) return;
 
             // No HTTP request or file write occurs before both applicable approvals.
             stagedFile = Path.Combine(folder, ".bedrockloader-" + Guid.NewGuid().ToString("N") + ".tmp");
@@ -92,21 +90,19 @@ public sealed partial class MainForm
             }
             LogAction($"Installed modloader from {ModloaderDownloadUrl} to {target}");
             UpdateStatus(T("Modloader installed.", "Modloader kuruldu."));
-            MessageBox.Show(this, T($"Modloader installed successfully.\n\n{target}", $"Modloader başarıyla kuruldu.\n\n{target}"),
-                "BedrockLoader", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            ShowThemedPopup(T("Installation complete", "Kurulum tamamlandı"), T($"Modloader installed successfully.\n\n{target}", $"Modloader başarıyla kuruldu.\n\n{target}"));
         }
         catch (UnauthorizedAccessException)
         {
             UpdateStatus(T("Modloader installation failed.", "Modloader kurulamadı."));
-            MessageBox.Show(this, T("Windows did not allow writing to the Content folder. Check the folder's write permissions and try again.",
-                "Windows, Content klasörüne yazmaya izin vermedi. Klasörün yazma izinlerini kontrol edip tekrar dene."),
-                T("Folder access denied", "Klasöre erişim reddedildi"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            ShowThemedPopup(T("Folder access denied", "Klasöre erişim reddedildi"), T("Windows did not allow writing to the Content folder. Check the folder's write permissions and try again.",
+                "Windows, Content klasörüne yazmaya izin vermedi. Klasörün yazma izinlerini kontrol edip tekrar dene."));
         }
         catch (Exception ex)
         {
             LogAction($"Modloader installation failed: {ex.Message}");
             UpdateStatus(T("Modloader installation failed.", "Modloader kurulamadı."));
-            ShowError(ex, T("Modloader installation failed", "Modloader kurulamadı"));
+            ShowThemedPopup(T("Modloader installation failed", "Modloader kurulamadı"), ex.Message);
         }
         finally
         {
