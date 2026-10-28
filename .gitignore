@@ -6,3 +6,8 @@ obj/
 *.suo
 *.pdb
 artifacts/
+installer-payload/
+installer-payload-*/
+installer-output/
+installer-tools/
+installer-test-*/

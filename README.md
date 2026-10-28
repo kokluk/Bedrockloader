@@ -1,55 +1,52 @@
-# BedrockLoader
+﻿# BedrockLoader
 
-Minecraft Bedrock için Windows üzerinde çalışan mod dosyası ve eklenti yöneticisi. C# / Windows Forms / .NET 8.
+Minecraft Bedrock için Windows mod ve paket yöneticisi. Güncel sürüm: **v0.15.10**.
 
-## İndir ve çalıştır
+- Mod dosyalarını ekleme, sürükle-bırak ve onayla silme.
+- Kaynak ve davranış paketlerini ayrı sütunlarda yönetme; `.mcpack`, `.mcaddon` ve uyumlu ZIP yükleme.
+- Tema ve dil seçimi, yumuşak düğme animasyonları ve aynı düğmeyle açılıp kapanan menüler.
+- Yeni sürüm bildirimi; indirme ve kurulum kullanıcı onayına bağlıdır.
+- Türkçe/İngilizce, Windows temasını izleyen açık/koyu gri kurulum sihirbazı.
 
-[BedrockLoader v0.12 — Windows ZIP paketini indir](https://github.com/kokluk/Bedrockloader/raw/refs/heads/main/downloads/BedrockLoader-v0.12-win.zip)
+## Windows kurulumu
 
-1. ZIP dosyasını bir klasöre çıkar.
-2. `BedrockLoader.exe` dosyasını aç. Yanındaki DLL ve JSON dosyalarını aynı klasörde tut.
-3. Bilgisayarında **.NET 8 Windows Desktop Runtime** kurulu olmalı.
+Kurulum dosyası: `BedrockLoader-Setup-v0.15.10-x64.exe`. Windows 10/11 x64 için hazırlanır; .NET çalışma zamanı dahildir. Kurulum kullanıcı hesabına yapılır ve yönetici izni gerektirmez.
 
-## Özellikler
-
-- Ana ekrandan Minecraft başlatma ve mod/eklenti kütüphanesine erişim.
-- Yerel mod dosyalarını ekleme, listeleme ve seçilenleri onayla silme.
-- `.mcpack`, `.mcaddon` ve uyumlu `.zip` eklenti paketlerini kurma.
-- Türkçe / İngilizce arayüz, açık / koyu görünüm ve tema renkleri.
-- Animasyonlu düğmeler, tema ile uyumlu sol menü ve boyutlandırılabilir pencere.
-- İşlem kayıtları ve oyun Content klasörü ayarı.
-
-## İzinli modloader kurulumu
-
-Ana ekrandaki **Modloader'ı kur** düğmesi kaynak bağlantısını ve hedef dosyayı göstererek kullanıcıdan izin ister. Onay verilmeden indirme veya dosya yazma başlamaz. Hedefte aynı dosya varsa değiştirmek için ayrıca onay alınır.
-
-Kullanılan bağlantı:
-
-`https://github.com/kokluk/BedrockFree/releases/download/McBedrock/vcruntime140_1.dll`
-
-Dosya, ayarlarda seçilen Minecraft **Content** klasörüne kurulur. Klasör yoksa kullanıcıya seçtirilir. İndirme geçici dosyada tamamlanır, Windows DLL biçimi kontrol edilir ve sonra hedefe taşınır. İndirme sınırı 64 MB'dır. Bu DLL dağıtım ZIP'ine dahil değildir; yalnızca kullanıcı izin verirse ayrı olarak indirilir.
-
-Yerel mod dosyası yönetimi ile modloader kurulumu ayrı işlemlerdir. DLL'in Minecraft sürümüyle uyumluluğu harici modloader kaynağına bağlıdır.
+[Yayınlanan sürümler](https://github.com/kokluk/Bedrockloader/releases)
 
 ## Kaynaktan derleme
 
-Gereksinimler: Windows 10/11 ve .NET 8 SDK. Visual Studio kullanılıyorsa .NET masaüstü geliştirme iş yükünü kur.
+Windows ve .NET 8 SDK gerekir:
 
 ```powershell
-dotnet build KoklukBedrockModloader.csproj -c Release -o artifacts
+dotnet build .\KoklukBedrockModloader.csproj -c Release
 ```
 
-Derlenen uygulama: `artifacts/BedrockLoader.exe`.
+Inno Setup 6.7.3 ile kurulum paketi üretmek için:
 
-## Proje dosyaları
+```powershell
+.\installer\build.ps1 -IsccPath 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+```
 
-- `MainForm.cs`: pencere, menü, ayarlar, mod ve eklenti işlemleri.
-- `ComfortablePages.cs`: ana ekran, eklentiler ve hakkında sayfaları.
-- `AnimatedRoundButton.cs`: düğme animasyonları.
-- `ModloaderInstaller.cs`: izinli indirme ve Content klasörüne kurulum.
+Kurulum çıktısı `installer-output/`, bağımsız uygulama dosyaları `installer-payload-v0.15.10/` altında oluşur.
 
-Ayarlar ve işlem kayıtları `%APPDATA%\BedrockLoader` altında tutulur. Yerel mod klasörü `%APPDATA%\Minecraft bedrock\mods` konumundadır.
+## Kontroller
 
-## Lisans
+```powershell
+dotnet run --project .\tests\PackLibrary.Tests -c Release
+dotnet run --project .\tests\ReleaseUpdates.Tests -c Release -- .\installer-payload-v0.15.10\BedrockLoader.exe
+```
 
-[MIT](LICENSE). Harici modloader bu deponun kaynak koduna ve dağıtımına dahil değildir.
+İkinci kontrol için önce kurulum derleme betiğini çalıştır. Kontroller yükleyiciyi çalıştırmaz ve kullanıcının paketlerini değiştirmez.
+
+## Modloader ve veriler
+
+Ana ekrandaki **Modloader'ı kur**, kaynak URL'yi ve Content hedefini göstererek izin ister. Mevcut DLL değiştirilecekse ayrıca onay alınır. Harici DLL kaynak koduna veya kurulum paketine dahil değildir; uyumluluğu harici sağlayıcıya bağlıdır.
+
+Kaynak: https://github.com/kokluk/BedrockFree/releases/download/McBedrock/vcruntime140_1.dll
+
+Ayarlar/kayıtlar `%APPDATA%\BedrockLoader`, yerel modlar `%APPDATA%\Minecraft bedrock\mods` altında tutulur. Kaldırma, Minecraft paketlerini ve kullanıcı ayarlarını silmez.
+
+Dahili mod deposu şimdilik **Yakında** ekranıdır. Güncelleyicinin dağıtım için erişilebilir bir GitHub Release ve doğrulanabilir kurulum dosyası bulunması gerekir. Depo özel ise anonim erişimle güncelleme alınamaz.
+
+MIT lisansı — Kokluk. Eski v0.12 Windows ZIP'i `downloads/` altında korunur.

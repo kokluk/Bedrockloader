@@ -1,0 +1,61 @@
+﻿#ifndef PayloadDir
+  #define PayloadDir "..\installer-payload-v0.15.10"
+#endif
+#ifndef ProjectDir
+  #if DirExists(SourcePath + "..\BedrockLoader-v0.12")
+    #define ProjectDir "..\BedrockLoader-v0.12"
+  #else
+    #define ProjectDir ".."
+  #endif
+#endif
+
+[Setup]
+AppId={{7B8B8A23-6749-4C7D-9D23-420A29B0F11B}
+AppName=BedrockLoader
+AppVersion=0.15.10
+AppVerName=BedrockLoader v0.15.10
+AppPublisher=Kokluk
+AppPublisherURL=https://github.com/kokluk/Bedrockloader
+AppSupportURL=https://github.com/kokluk/Bedrockloader/issues
+DefaultDirName={localappdata}\Programs\BedrockLoader
+DefaultGroupName=BedrockLoader
+DisableProgramGroupPage=yes
+PrivilegesRequired=lowest
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+MinVersion=10.0
+LicenseFile={#ProjectDir}\LICENSE
+OutputDir=..\installer-output
+OutputBaseFilename=BedrockLoader-Setup-v0.15.10-x64
+VersionInfoVersion=0.15.10.0
+SetupIconFile={#ProjectDir}\Assets\BedrockLoader.ico
+UninstallDisplayIcon={app}\BedrockLoader.exe
+WizardStyle=modern dynamic windows11 hidebevels includetitlebar
+WizardBackColor=#f2f4fa
+WizardBackColorDynamicDark=#202020
+Compression=lzma2/normal
+SolidCompression=yes
+CloseApplications=yes
+RestartApplications=no
+SetupLogging=yes
+
+[Languages]
+Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+Source: "{#PayloadDir}\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ProjectDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{autoprograms}\BedrockLoader"; Filename: "{app}\BedrockLoader.exe"; WorkingDir: "{app}"
+Name: "{autodesktop}\BedrockLoader"; Filename: "{app}\BedrockLoader.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\BedrockLoader.exe"; Description: "{cm:LaunchProgram,BedrockLoader}"; Flags: nowait postinstall skipifsilent
+
+; AppData settings, Minecraft mods and the separately installed modloader are
+; user data. Uninstall removes only files installed by this setup.

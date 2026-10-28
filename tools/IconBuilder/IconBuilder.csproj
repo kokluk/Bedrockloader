@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <BedrockSourceDir Condition="Exists('../../BedrockLoader-v0.12')">../../BedrockLoader-v0.12</BedrockSourceDir>
+    <BedrockSourceDir Condition="'$(BedrockSourceDir)' == ''">../..</BedrockSourceDir>
+  </PropertyGroup>
+  <ItemGroup><Compile Include="$(BedrockSourceDir)/SoftIcons.cs" Link="SoftIcons.cs" /></ItemGroup>
+</Project>

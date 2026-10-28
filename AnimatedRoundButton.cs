@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 
@@ -12,11 +12,22 @@ public sealed partial class MainForm
         long lastFrame;
         bool hovered, pressed;
         double hoverAmount, pressAmount, focusAmount, pulse = 1;
+        double compression, compressionVelocity;
         Point pulseOrigin;
         Color paintedBackground;
         static readonly bool reducedMotion = ReadReducedMotion();
+        internal static bool ReducedMotion => reducedMotion;
+        double revealAmount = 1;
+        public double RevealAmount { get => revealAmount; set { revealAmount = Math.Clamp(value, 0, 1); Invalidate(); } }
+        double revealExpansion = 1;
+        public double RevealExpansion { get => revealExpansion; set { revealExpansion = Math.Clamp(value, 0, 1.08); Invalidate(); } }
+        internal bool HasRevealAnimation { get; set; }
+        double revealTextAmount = 1;
+        public double RevealTextAmount { get => revealTextAmount; set { revealTextAmount = Math.Clamp(value, 0, 1); Invalidate(); } }
         public int CornerRadius { get; set; } = 18;
         public Color FocusBorderColor { get; set; } = Color.Empty;
+        public string? LeadingIcon { get; set; }
+        protected double HoverAmount => hoverAmount;
 
         [DllImport("user32.dll")]
         static extern bool SystemParametersInfo(uint action, uint parameter, ref int value, uint flags);
@@ -72,10 +83,26 @@ public sealed partial class MainForm
             focusAmount = Approach(focusAmount, Focused && Enabled ? 1 : 0, smooth);
             paintedBackground = Blend(paintedBackground, BackColor, smooth);
             pulse = reducedMotion ? 1 : Math.Min(1, pulse + dt / 0.32);
+            // A damped spring gives a small rebound without changing layout bounds.
+            double target = pressed && Enabled && !reducedMotion ? 1 : 0;
+            if (reducedMotion) { compression = 0; compressionVelocity = 0; }
+            else
+            {
+                int steps = Math.Max(1, (int)Math.Ceiling(dt / 0.008));
+                double step = dt / steps;
+                for (int i = 0; i < steps; i++)
+                {
+                    compressionVelocity += ((target - compression) * 560 - compressionVelocity * 25) * step;
+                    compression += compressionVelocity * step;
+                }
+                if (Math.Abs(compression - target) < 0.002 && Math.Abs(compressionVelocity) < 0.025)
+                { compression = target; compressionVelocity = 0; }
+            }
             bool extra = AdvanceExtraMotion(smooth);
             Invalidate();
             if (!extra && hoverAmount == (hovered && Enabled ? 1 : 0) && pressAmount == (pressed && Enabled ? 1 : 0)
-                && focusAmount == (Focused && Enabled ? 1 : 0) && paintedBackground.ToArgb() == BackColor.ToArgb() && pulse == 1)
+                && focusAmount == (Focused && Enabled ? 1 : 0) && compression == target && compressionVelocity == 0
+                && paintedBackground.ToArgb() == BackColor.ToArgb() && pulse == 1)
                 motionTimer.Stop();
         }
 
@@ -84,10 +111,14 @@ public sealed partial class MainForm
         protected override void OnMouseLeave(EventArgs e) { hovered = false; pressed = false; Animate(); base.OnMouseLeave(e); }
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left) { pressed = true; BeginPulse(e.Location); }
+            if (e.Button == MouseButtons.Left) { pressed = true; if (!reducedMotion) compressionVelocity = Math.Min(18, compressionVelocity + 9); BeginPulse(e.Location); }
             base.OnMouseDown(e);
         }
-        protected override void OnMouseUp(MouseEventArgs e) { pressed = false; Animate(); base.OnMouseUp(e); }
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            if (pressed && !reducedMotion) { compression = Math.Max(compression, 0.55); compressionVelocity = Math.Min(compressionVelocity, 0); }
+            pressed = false; Animate(); base.OnMouseUp(e);
+        }
         protected override void OnMouseCaptureChanged(EventArgs e) { if (!Capture) pressed = false; Animate(); base.OnMouseCaptureChanged(e); }
         protected override void OnKeyDown(KeyEventArgs e)
         {
@@ -109,20 +140,27 @@ public sealed partial class MainForm
 
         protected void ApplyContentMotion(Graphics graphics)
         {
-            float scale = (float)(1 - pressAmount * 0.035);
-            graphics.TranslateTransform(Width / 2f, Height / 2f + (float)pressAmount);
-            graphics.ScaleTransform(scale, scale); graphics.TranslateTransform(-Width / 2f, -Height / 2f);
+            float amount = (float)Math.Clamp(compression, -0.25, 1.2);
+            graphics.TranslateTransform(Width / 2f, Height / 2f + amount * 1.3f);
+            graphics.ScaleTransform(1 - amount * 0.035f, 1 - amount * 0.075f);
+            graphics.TranslateTransform(-Width / 2f, -Height / 2f);
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.PixelOffsetMode = PixelOffsetMode.HighQuality;
             g.Clear(Parent?.BackColor ?? SystemColors.Control);
-            int inset = 1 + (int)Math.Round(pressAmount * 2);
-            var bounds = ClientRectangle; bounds.Inflate(-inset, -inset);
-            using var path = RoundedPath(bounds, Math.Max(4, CornerRadius - inset + 1));
+            if (revealAmount <= 0.005) return;
+            float amount = (float)Math.Clamp(compression, -0.25, 1.2);
+            float insetX = Math.Max(0.5f, 1 + amount * 2.5f), insetY = Math.Max(0.5f, 1 + amount * 1.2f);
+            float shapeWidth = Math.Min(Width - 1, (Width - insetX * 2) * (float)(0.90 + 0.10 * revealExpansion));
+            float shapeHeight = Math.Min(Height - 1, (Height - insetY * 2) * (float)(0.60 + 0.40 * revealExpansion));
+            using var path = SoftIcons.Round((Width - shapeWidth) / 2, (Height - shapeHeight) / 2,
+                Math.Max(1, shapeWidth), Math.Max(1, shapeHeight),
+                Math.Max(4, CornerRadius - amount * 6));
             var color = Blend(paintedBackground, ControlPaint.Light(paintedBackground, 0.14f), hoverAmount);
             color = Blend(color, ControlPaint.Dark(paintedBackground, 0.16f), pressAmount);
+            color = Blend(Parent?.BackColor ?? BackColor, color, revealAmount);
             using (var brush = new SolidBrush(color)) g.FillPath(brush, path);
             if (pulse < 1 && Enabled)
             {
@@ -137,10 +175,28 @@ public sealed partial class MainForm
                 g.DrawPath(pen, path);
             }
             var textRect = ClientRectangle;
-            if (this is NavIconButton) { textRect.X += 34; textRect.Width -= 38; }
-            textRect.Offset(0, (int)Math.Round(pressAmount));
-            TextRenderer.DrawText(g, Text, Font, textRect, Enabled ? ForeColor : SystemColors.GrayText,
-                (this is NavIconButton ? TextFormatFlags.Left : TextFormatFlags.HorizontalCenter) | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+            if (this is SoftSelector) { textRect.X += 14; textRect.Width -= 52; }
+            if (this is NavIconButton) { textRect.X += 42; textRect.Width -= 46; }
+            else if (LeadingIcon != null)
+            {
+                int size = Height >= 48 ? 24 : 18;
+                int textWidth = TextRenderer.MeasureText(Text, Font, Size.Empty, TextFormatFlags.SingleLine | TextFormatFlags.NoPadding).Width;
+                int x = Math.Max(10, (Width - textWidth - size - 8) / 2);
+                var iconState = g.Save(); ApplyContentMotion(g);
+                SoftIcons.Draw(g, LeadingIcon, new RectangleF(x, (Height - size) / 2f, size, size), ForeColor, true);
+                g.Restore(iconState);
+                textRect.X = x + size + 8; textRect.Width = Math.Max(0, Width - textRect.X - 10);
+            }
+            // Rasterize glyphs on a fixed pixel grid: spring-scale only the shape
+            // and icons, never the text, so ClearType does not shimmer each frame.
+            double textVisibility = HasRevealAnimation ? revealTextAmount : revealAmount;
+            var textColor = Blend(color,
+                Enabled || HasRevealAnimation ? ForeColor : Blend(BackColor, ForeColor, 0.45),
+                textVisibility);
+            if (textVisibility > 0.005)
+                TextRenderer.DrawText(g, Text, Font, textRect, textColor,
+                    (this is NavIconButton || this is SoftSelector || LeadingIcon != null ? TextFormatFlags.Left : TextFormatFlags.HorizontalCenter)
+                    | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
         }
     }
 }
