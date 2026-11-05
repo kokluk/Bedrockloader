@@ -1,16 +1,23 @@
 # BedrockLoader
 
-Minecraft Bedrock için Windows mod, paket ve sunucu yöneticisi. Kaynak sürümü **v0.16.10**.
+Minecraft Bedrock ve Cinnabar için Windows başlatıcısı ve içerik yöneticisi. Kaynak sürümü **v0.16.10**.
 
-- Mod dosyalarını ekleme, sürükle-bırak ve onayla silme.
-- Kaynak ve davranış paketlerini ayrı sütunlarda yönetme; `.mcpack`, `.mcaddon` ve uyumlu ZIP yükleme.
-- Tema ve dil seçimi, yumuşak düğme animasyonları ve aynı düğmeyle açılıp kapanan menüler.
-- Yeni sürüm bildirimi; indirme ve kurulum kullanıcı onayına bağlıdır.
-- Türkçe/İngilizce, Windows temasını izleyen açık/koyu gri kurulum sihirbazı.
+## Cinnabar modu
+
+Ana ekrandaki değiştirme düğmesiyle Minecraft ve Cinnabar arasında geçebilirsin. Cinnabar, Rust ile geliştirilen bağımsız bir Bedrock istemcisidir. BedrockLoader, Cinnabar’ın resmî Windows paketini indirip doğrulayabilir, kurulu sürümü başlatabilir ve güncellemeleri denetleyebilir.
+
+Cinnabar modunda yerel dünyaları ve shader paketlerini görüntüleyebilir, CurseForge’dan uyumlu Java shader paketlerini indirebilir ve seçili shader’ları Geri Dönüşüm Kutusu’na taşıyabilirsin. Launcher’da kayıtlı sunucular bu modda da görünür. Adresi kopyalayıp Cinnabar’ın kendi sunucu ekranına yapıştırabilirsin. [Cinnabar projesi](https://github.com/cinnabar-mc/cinnabar)
+
+## Öne çıkan özellikler
+
+- **Sunucular** — IPv4, IPv6 ve alan adı desteği, favoriler ve arka planda gecikme sorgusu. Minecraft’a sunucu gönderme ve oyun kapalıyken üçüncü taraf IPv4 veya alan adı kayıtlarını yedek alarak düzenleme.
+- **Skinler ve dünyalar** — Yerel skin paketleri, döndürülebilir 3B önizleme, favoriler, PNG dışa aktarma ve 64×64 veya 128×128 şeffaf PNG bindirme. Dünya kartları oyun içi görselleri gösterebilir ve `.mcworld` dosyaları Minecraft’a aktarılabilir.
+- **CurseForge ve Mod Merkezi** — Kaynak ve davranış paketleri, dünyalar, skin paketleri ve Cinnabar shader’ları için ayrı kataloglar. Mod Merkezi’nde sürüm seçenekleri ve doğrulanmış DLL indirmeleri bulunur. CurseForge anahtarı gerekiyorsa katalogdaki **Bağlantı** penceresinden eklenebilir.
+- **Başlatma ve görünüm** — Minecraft kurulumu farklı sürücülerde algılanır. Kurulum için Microsoft Store üzerinden WinGet denenir. Discord Rich Presence sürümü ve oyun süresini isteğe bağlı paylaşır. Türkçe ve İngilizce, açık ve koyu temalar ve Material You paletleri desteklenir.
 
 ## Windows kurulumu
 
-[Yayınlanan sürümler](https://github.com/kokluk/Bedrockloader/releases)
+[v0.16.10 Windows x64 kurulumu ve sürüm notları](https://github.com/kokluk/Bedrockloader/releases/tag/v0.16.10)
 
 ## Kaynaktan derleme
 
