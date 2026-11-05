@@ -46,12 +46,7 @@ dotnet run --project .\tests\ReleaseUpdates.Tests -c Release -- .\installer-payl
 
 ## Modloader ve veriler
 
-Ana ekrandaki **Modloader'ı kur**, kaynak URL'yi ve Content hedefini göstererek izin ister. Mevcut DLL değiştirilecekse ayrıca onay alınır. Harici DLL kaynak koduna veya kurulum paketine dahil değildir; uyumluluğu harici sağlayıcıya bağlıdır.
-
-Kaynak: https://github.com/kokluk/BedrockFree/releases/download/McBedrock/vcruntime140_1.dll
-
 Ayarlar/kayıtlar `%APPDATA%\BedrockLoader`, yerel modlar `%APPDATA%\Minecraft bedrock\mods` altında tutulur. Kaldırma, Minecraft paketlerini ve kullanıcı ayarlarını silmez.
 
-Güncelleyicinin dağıtım için erişilebilir bir GitHub Release ve doğrulanabilir kurulum dosyası bulunması gerekir. Depo özel ise anonim erişimle güncelleme alınamaz.
 
 MIT lisansı — Kokluk. Kaynak ağacında hazır EXE, DLL veya dağıtım ZIP'i tutulmaz; çalıştırılabilir paketler yalnızca Releases bölümünde paylaşılır.
