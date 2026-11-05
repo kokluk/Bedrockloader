@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -12,7 +12,7 @@ internal sealed record UpdateRelease(Version Version, string Tag, string Notes, 
 
 internal static class ReleaseUpdates
 {
-    public static readonly Version CurrentVersion = new(0, 15, 12, 0);
+    public static readonly Version CurrentVersion = new(0, 16, 10, 0);
     public static bool ShouldNotify(UpdateRelease? release) => release != null && release.Version > CurrentVersion;
     public const string ReleasesPage = "https://github.com/kokluk/Bedrockloader/releases";
     public const string LatestApi = "https://api.github.com/repos/kokluk/Bedrockloader/releases/latest";
@@ -79,7 +79,10 @@ internal static class ReleaseUpdates
         return ParseRelease(System.Text.Encoding.UTF8.GetString(memory.ToArray()));
     }
 
-    public static async Task DownloadAsync(HttpClient http, UpdateRelease release, string path, Action<long>? progress, CancellationToken token)
+    public static Task DownloadAsync(HttpClient http, UpdateRelease release, string path, Action<long>? progress, CancellationToken token) =>
+        DownloadVerifiedAsync(http, release, path, progress, token, false);
+
+    internal static async Task DownloadVerifiedAsync(HttpClient http, UpdateRelease release, string path, Action<long>? progress, CancellationToken token, bool? dll)
     {
         if (!release.CanInstall) throw new InvalidDataException("No verified installer / Doğrulanabilir kurulum dosyası yok.");
         using var response = await http.GetAsync(release.Download, HttpCompletionOption.ResponseHeadersRead, token);
@@ -106,10 +109,11 @@ internal static class ReleaseUpdates
                 if (!Convert.ToHexString(hash.GetHashAndReset()).Equals(release.Sha256, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidDataException("SHA-256 verification failed / SHA-256 doğrulaması başarısız.");
             }
+            if (dll == null) return;
             using var executable = File.OpenRead(path);
             using var pe = new System.Reflection.PortableExecutable.PEReader(executable);
-            if (pe.PEHeaders.PEHeader == null || (pe.PEHeaders.CoffHeader.Characteristics & System.Reflection.PortableExecutable.Characteristics.Dll) != 0)
-                throw new InvalidDataException("Installer is not an executable / Kurulum dosyası yürütülebilir bir dosya değil.");
+            if (pe.PEHeaders.PEHeader == null || pe.PEHeaders.IsDll != dll)
+                throw new InvalidDataException(dll == true ? "Expected a Windows DLL." : "Installer is not an executable / Kurulum dosyası yürütülebilir bir dosya değil.");
         }
         catch
         {

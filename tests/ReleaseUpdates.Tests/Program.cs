@@ -1,4 +1,4 @@
-﻿using KoklukBedrockModloader;
+using KoklukBedrockModloader;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -10,15 +10,15 @@ async Task Reject(Func<Task> action, string name)
     try { await action(); } catch { passed++; Console.WriteLine("PASS " + name); return; }
     throw new Exception("Expected rejection: " + name);
 }
-string Json(string tag = "v0.16", string? digest = null, string? url = null, string? page = null, bool draft = false, bool prerelease = false, long size = 4) => JsonSerializer.Serialize(new
+string Json(string tag = "v0.17", string? digest = null, string? url = null, string? page = null, bool draft = false, bool prerelease = false, long size = 4) => JsonSerializer.Serialize(new
 {
     tag_name = tag, draft, prerelease, body = "Changes", html_url = page ?? "https://github.com/kokluk/Bedrockloader/releases/tag/" + tag,
     assets = new[] { new { name = $"BedrockLoader-Setup-v{tag.TrimStart('v')}-x64.exe", state = "uploaded", size,
         browser_download_url = url ?? "https://github.com/kokluk/Bedrockloader/releases/download/" + tag + "/setup.exe", digest } }
 });
 string fakeDigest = "sha256:" + new string('a', 64);
-Assert(ReleaseUpdates.ParseVersion("v0.15.12") == ReleaseUpdates.CurrentVersion, "same version is not an update");
-Assert(ReleaseUpdates.ParseVersion("v0.16.0") > ReleaseUpdates.CurrentVersion, "newer version comparison");
+Assert(ReleaseUpdates.ParseVersion("v0.16.10") == ReleaseUpdates.CurrentVersion, "same version is not an update");
+Assert(ReleaseUpdates.ParseVersion("v0.17.0") > ReleaseUpdates.CurrentVersion, "newer version comparison");
 Assert(!ReleaseUpdates.ParseRelease(Json()).CanInstall, "missing hash blocks install");
 Assert(!ReleaseUpdates.ParseRelease(Json(digest: fakeDigest, url: "https://evil.example/setup.exe")).CanInstall, "external installer URL rejected");
 Assert(!ReleaseUpdates.ParseRelease(Json(digest: fakeDigest, url: "http://github.com/kokluk/Bedrockloader/releases/download/v0.14/setup.exe")).CanInstall, "HTTP installer URL rejected");

@@ -2,9 +2,9 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm
 {
-    DialogResult ShowThemedPopup(string title, string message, bool confirmation = false)
+    DialogResult ShowThemedPopup(string title, string message, bool confirmation = false, string? confirmLabel = null)
     {
-        using var popup = new RoundedPopupForm
+        using var popup = new RoundedPopupForm(Accent)
         {
             Text = title, FormBorderStyle = FormBorderStyle.None, ShowInTaskbar = false,
             StartPosition = FormStartPosition.CenterParent, BackColor = Bg, ForeColor = TextColor,
@@ -36,13 +36,13 @@ public sealed partial class MainForm
         var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = confirmation ? 2 : 1, RowCount = 1, Margin = Padding.Empty, Padding = new Padding(0, 14, 0, 6), BackColor = Surface };
         actions.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         for (int i = 0; i < actions.ColumnCount; i++) actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / actions.ColumnCount));
-        var cancel = MakeButton(confirmation ? T("Cancel", "Vazgeç") : T("OK", "Tamam"), () => popup.DialogResult = confirmation ? DialogResult.No : DialogResult.OK);
+        var cancel = MakeButton(confirmation ? T("Cancel", "Vazgeç") : (confirmLabel ?? T("OK", "Tamam")), () => popup.DialogResult = confirmation ? DialogResult.No : DialogResult.OK);
         cancel.Dock = DockStyle.Fill; cancel.Margin = new Padding(0, 0, confirmation ? 6 : 0, 0);
         ApplyButtonPalette(cancel); actions.Controls.Add(cancel, 0, 0);
         popup.CancelButton = cancel;
         if (confirmation)
         {
-            var accept = MakeButton(T("Allow installation", "Kuruluma izin ver"), () => popup.DialogResult = DialogResult.Yes);
+            var accept = MakeButton(confirmLabel ?? T("Allow installation", "Kuruluma izin ver"), () => popup.DialogResult = DialogResult.Yes);
             accept.Tag = "primary"; accept.Dock = DockStyle.Fill; accept.Margin = new Padding(6, 0, 0, 0);
             ApplyButtonPalette(accept); actions.Controls.Add(accept, 1, 0);
         }
@@ -54,8 +54,117 @@ public sealed partial class MainForm
         return popup.ShowDialog(this);
     }
 
+    RoundedPanel WrapPopupInput(TextBox input)
+    {
+        var field = new RoundedPanel { BackColor = SurfaceAlt, CornerRadius = 13, Padding = new Padding(12, 7, 12, 0) };
+        input.BorderStyle = BorderStyle.None;
+        input.Dock = DockStyle.Fill;
+        field.Controls.Add(input);
+        field.Click += (_, _) => input.Focus();
+        input.Enter += (_, _) => field.Invalidate();
+        input.Leave += (_, _) => field.Invalidate();
+        field.Paint += (_, e) =>
+        {
+            if (field.Width < 4 || field.Height < 4) return;
+            using var path = RoundedPath(new Rectangle(1, 1, field.Width - 3, field.Height - 3), field.CornerRadius);
+            using var pen = new Pen(input.Focused ? Accent : MixColors(SurfaceAlt, TextColor, .18), input.Focused ? 1.5f : 1f);
+            e.Graphics.DrawPath(pen, path);
+        };
+        return field;
+    }
+
+    sealed class PopupToggle(Color accent, Color surface) : CheckBox
+    {
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.Clear(BackColor);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            int top = (Height - 16) / 2;
+            using var track = RoundedPath(new Rectangle(2, top, 30, 16), 8);
+            using var fill = new SolidBrush(Checked ? accent : surface);
+            using var pen = new Pen(Focused ? accent : MixColors(surface, ForeColor, .35));
+            using var thumb = new SolidBrush(Checked ? ReadableText(accent) : ForeColor);
+            e.Graphics.FillPath(fill, track);
+            e.Graphics.DrawPath(pen, track);
+            e.Graphics.FillEllipse(thumb, Checked ? 19 : 5, top + 3, 10, 10);
+            TextRenderer.DrawText(e.Graphics, Text, Font, new Rectangle(41, 0, Math.Max(0, Width - 41), Height), ForeColor,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+        }
+    }
+
     sealed class RoundedPopupForm : Form
     {
+        readonly System.Windows.Forms.Timer entranceTimer = new() { Interval = 15 };
+        readonly System.Diagnostics.Stopwatch entranceClock = new();
+        Point entranceDestination;
+        int entranceDistance;
+        readonly Color accent;
+
+        public RoundedPopupForm(Color accent)
+        {
+            this.accent = accent;
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            DoubleBuffered = true;
+            entranceTimer.Tick += (_, _) =>
+            {
+                double elapsed = entranceClock.Elapsed.TotalMilliseconds;
+                double progress = Math.Clamp(elapsed / 150d, 0, 1);
+                int offset = (int)Math.Round(entranceDistance * Math.Pow(1 - progress, 3));
+                var frame = new Point(entranceDestination.X, entranceDestination.Y + offset);
+                if (Location != frame) Location = frame;
+                if (progress >= 1)
+                {
+                    entranceTimer.Stop(); entranceClock.Stop();
+                }
+            };
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            int inset = (int)Math.Round(9 * DeviceDpi / 96d);
+            Padding = new Padding(Math.Max(inset, Padding.Left), Math.Max(inset, Padding.Top),
+                Math.Max(inset, Padding.Right), Math.Max(inset, Padding.Bottom));
+            base.OnLoad(e);
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs e) => e.Graphics.Clear(BackColor);
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            if (ClientSize.Width < 5 || ClientSize.Height < 5) return;
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using var outline = RoundedPath(new Rectangle(1, 1, ClientSize.Width - 3, ClientSize.Height - 3),
+                (int)Math.Round(23 * DeviceDpi / 96d));
+            using var pen = new Pen(MixColors(BackColor, accent, .65), Math.Max(1.5f, DeviceDpi / 64f));
+            e.Graphics.DrawPath(pen, outline);
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            if (!AnimatedRoundButton.ReducedMotion)
+            {
+                entranceDestination = Location;
+                entranceDistance = (int)Math.Round(14 * DeviceDpi / 96d);
+                Location = new Point(entranceDestination.X, entranceDestination.Y + entranceDistance);
+                entranceClock.Restart();
+                entranceTimer.Start();
+            }
+            base.OnShown(e);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
+            if (!e.Cancel) { entranceTimer.Stop(); entranceClock.Stop(); }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) entranceTimer.Dispose();
+            base.Dispose(disposing);
+        }
+
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);

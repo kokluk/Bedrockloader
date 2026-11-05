@@ -1,6 +1,6 @@
-﻿# BedrockLoader kurulumu
+# BedrockLoader kurulumu
 
-`BedrockLoader-Setup-v0.15.12-x64.exe`, Windows 10/11 x64 için tek dosyalık kurulum paketidir. Uygulamayı varsayılan olarak `%LOCALAPPDATA%\Programs\BedrockLoader` klasörüne kurar ve yönetici izni gerektirmez.
+`BedrockLoader-Setup-v0.16.10-x64.exe`, Windows 10/11 x64 için tek dosyalık kurulum paketidir. Uygulamayı varsayılan olarak `%LOCALAPPDATA%\Programs\BedrockLoader` klasörüne kurar ve yönetici izni gerektirmez.
 
 - Türkçe ve İngilizce kurulum sihirbazı.
 - Windows'un açık/koyu uygulama temasını otomatik izleyen kurulum ve kaldırma sihirbazı; koyu görünümde koyu gri zemin (#202020).
@@ -18,9 +18,9 @@ Windows'ta .NET 8 SDK ve Inno Setup 6.7.3 veya uyumlu sürümü gerekir. Proje k
 .\installer\build.ps1 -IsccPath 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 ```
 
-Çıktı: `installer-output/BedrockLoader-Setup-v0.15.12-x64.exe`.
+Çıktı: `installer-output/BedrockLoader-Setup-v0.16.10-x64.exe`.
 
-Derleme betiği proje dosyalarını önce `BedrockLoader-v0.12/` klasöründe, ardından depo kökünde arar.
+Derleme betiği proje dosyalarını önce `BedrockLoader/` klasöründe, ardından depo kökünde arar.
 
 Derleyici: [Inno Setup resmi indirmeleri](https://jrsoftware.org/isdl.php). Kurulum paketi dijital olarak imzalanmamıştır.
 

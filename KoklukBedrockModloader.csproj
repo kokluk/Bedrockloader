@@ -1,17 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <SatelliteResourceLanguages>tr;en</SatelliteResourceLanguages>
     <AssemblyName>BedrockLoader</AssemblyName>
     <RootNamespace>BedrockLoader</RootNamespace>
-    <Version>0.15.12</Version>
+    <Version>0.16.10</Version>
     <ApplicationIcon>Assets\BedrockLoader.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="tests/**/*.cs;tools/**/*.cs" />
+    <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
+    <EmbeddedResource Include="$(CurseForgeKeyFile)" LogicalName="BedrockLoader.CurseForgeKey" Condition="'$(CurseForgeKeyFile)' != ''" />
     <EmbeddedResource Include="Assets\WolfTransparent.png" LogicalName="BedrockLoader.WolfTransparent.png" />
   </ItemGroup>
 </Project>

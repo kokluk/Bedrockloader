@@ -13,30 +13,6 @@ public sealed partial class MainForm
     TextBox? releaseNotes;
     Button? checkUpdateButton, installUpdateButton;
 
-    void BuildModCatalogPage()
-    {
-        var page = new Panel { Dock = DockStyle.Fill, AutoScroll = false, Tag = "page" };
-        var card = new RoundedPanel { Dock = DockStyle.Fill, Height = 280, Padding = new Padding(24), CornerRadius = 24 };
-        var title = WrappedText(T("Built-in mod repository", "Dahili mod deposu"), 19, true); title.Height = 52;
-        var badge = WrappedText(T("COMING SOON", "YAKINDA"), 11, true); badge.Height = 32;
-        var description = WrappedText(T("The mod repository is being prepared. When it opens, you will be able to browse the available mods here.",
-            "Mod deposu hazırlanıyor. Açıldığında kullanıma sunulan modları burada görebileceksin."), 11); description.Height = 82;
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, Tag = "card", Margin = Padding.Empty };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
-        title.Dock = DockStyle.Fill; badge.Dock = DockStyle.Fill; description.Dock = DockStyle.Fill;
-        var back = MakeButton(T("Back to mods", "Modlara dön"), () => ShowPage("Mods"), 150);
-        back.Tag = "card-button";
-        back.Anchor = AnchorStyles.Left; back.Margin = new Padding(0, 6, 0, 6);
-        layout.Controls.Add(title, 0, 0); layout.Controls.Add(badge, 0, 1); layout.Controls.Add(description, 0, 2); layout.Controls.Add(back, 0, 3);
-        card.Controls.Add(layout);
-        page.Controls.Add(card); contentHost.Controls.Add(page);
-        AddPageHeading(T("Built-in mods", "Dahili modlar"), T("Your mod repository, in one place.", "Mod depon, tek bir yerde."));
-    }
-
     void BuildUpdatesPage()
     {
         var page = new Panel { Dock = DockStyle.Fill, AutoScroll = false, Tag = "page" };
@@ -157,6 +133,7 @@ public sealed partial class MainForm
 
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
+        presenceLifetime.Cancel();
         updatesLifetime.Cancel(); updatesLifetime.Dispose(); base.OnFormClosed(e);
     }
 }

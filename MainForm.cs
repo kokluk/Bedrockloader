@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.IO.Compression;
@@ -10,7 +10,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm : Form
 {
-    const string DisplayVersion = "v0.15.12";
+    const string DisplayVersion = "v0.16.10";
     SymbolButton? updateLauncher;
     static readonly HttpClient Http = CreateHttpClient();
     readonly string modsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Minecraft bedrock", "mods");
@@ -22,7 +22,8 @@ public sealed partial class MainForm : Form
     readonly List<Button> navButtons = new();
     readonly Panel contentHost = new();
     readonly Label status = new SoftStatusLabel();
-    readonly ToggleContextMenu languageMenu = new();
+    readonly SelectorMenu languageMenu = new() { AnimateOpening = true };
+    bool showOtherModFiles;
     readonly Panel dropPanel = new RoundedPanel { CornerRadius = 20, Tag = "card" };
     readonly Label dropTitle = new();
     readonly Label dropSubtitle = new();
@@ -77,6 +78,7 @@ public sealed partial class MainForm : Form
         FormBorderStyle = FormBorderStyle.None;
         // Leave the resize perimeter on the form itself, outside child panels.
         Padding = new Padding(8);
+        Resize += (_, _) => { int inset = WindowState == FormWindowState.Maximized ? 20 : 8; if (Padding.Left != inset) Padding = new Padding(inset); };
         Font = new Font("Segoe UI", 9f);
         DoubleBuffered = true;
         AllowDrop = true;
@@ -96,16 +98,18 @@ public sealed partial class MainForm : Form
         }
         Directory.CreateDirectory(modsFolder);
         Directory.CreateDirectory(addonDownloads);
-        ShowPage("Mods");
+        ShowPage("Home");
+        Shown += (_, _) => ShowLauncherIntro();
         LogAction("Application started");
         ApplyTheme();
         UpdateStatus(T("Ready.", "Hazır."));
+        StartDiscordPresence();
     }
 
     static HttpClient CreateHttpClient()
     {
         var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("BedrockLoader/0.15.12 (Windows; .NET 8)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("BedrockLoader/0.16.10 (Windows; .NET 8)");
         return http;
     }
 
@@ -147,13 +151,17 @@ public sealed partial class MainForm : Form
         var body = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(0, 20, 0, 20), Margin = Padding.Empty, Tag = "shell" };
         body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 210)); body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         root.Controls.Add(body, 0, 1);
-        var nav = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 6, AutoScroll = false, Margin = new Padding(0, 0, 12, 0), Padding = new Padding(1, 0, 1, 0), Tag = "shell" };
+        var nav = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 9, AutoScroll = false, Margin = new Padding(0, 0, 12, 0), Padding = new Padding(1, 0, 1, 0), Tag = "shell" };
         nav.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        for (int row = 0; row < 5; row++) nav.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        for (int row = 0; row < 8; row++) nav.RowStyles.Add(new RowStyle(SizeType.Absolute, row == 1 ? 16 : 42));
         nav.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         body.Controls.Add(nav, 0, 0);
-        AddNav(nav, "Home", "", T("Home", "Ana ekran")); AddNav(nav, "Mods", "", T("Mods", "Modlar"));
-        AddNav(nav, "Addons", "", T("Packs", "Packler")); AddNav(nav, "Logs", "", T("Logs", "Kayıtlar")); AddNav(nav, "About", "", T("About", "Hakkında"));
+        AddNav(nav, "Home", "", T("Home", "Ana ekran"));
+        var divider = new Panel { Dock = DockStyle.Top, Height = 1, Margin = new Padding(8, 3, 8, 0) };
+        divider.Paint += (_, e) => { using var pen = new Pen(MixColors(Bg, TextColor, .18)); e.Graphics.DrawLine(pen, 0, 0, divider.Width, 0); };
+        nav.Controls.Add(divider, 0, 1);
+        AddNav(nav, "Mods", "", T("Mods", "Modlar"));
+        AddNav(nav, "Addons", "", T("Packs", "Packler")); AddNav(nav, "Skins", "", T("Skins", "Skinler")); AddNav(nav, "Worlds", "", T("Worlds", "Dünyalar")); AddNav(nav, "Servers", "", T("Servers", "Sunucular")); AddNav(nav, "About", "", T("About", "Hakkında"));
         contentHost.Dock = DockStyle.Fill; contentHost.BackColor = Surface; contentHost.Tag = "page";
         contentHost.Margin = Padding.Empty; contentHost.Padding = new Padding(12, 13, 12, 12);
         MakeRounded(contentHost, 20); body.Controls.Add(contentHost, 1, 0);
@@ -161,33 +169,54 @@ public sealed partial class MainForm : Form
         footer.Paint += (_, e) => { using var pen = new Pen(lightMode ? Color.FromArgb(206, 216, 225) : Color.FromArgb(35, 49, 65)); e.Graphics.DrawLine(pen, 0, 0, footer.Width, 0); };
         status.Dock = DockStyle.Fill; status.Font = new Font("Segoe UI", 8); status.TextAlign = ContentAlignment.MiddleLeft; status.Padding = Padding.Empty;
         footer.Controls.Add(status);
+        var logs = new SymbolButton { Symbol = "Logs", AccessibleName = T("Logs", "Kayıtlar"), Size = new Size(36, 36), Cursor = Cursors.Hand };
+        logs.Location = new Point(0, 6);
+        logs.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        logs.Click += (_, _) => ShowPage("Logs");
+        footer.Controls.Add(logs);
+        logs.BringToFront();
+        footer.SizeChanged += (_, _) => logs.Left = Math.Max(0, footer.ClientSize.Width - logs.Width - 4);
+        status.Padding = new Padding(0, 0, 44, 0);
+        var logsTip = new ToolTip();
+        logsTip.SetToolTip(logs, logs.AccessibleName);
+        logs.Disposed += (_, _) => logsTip.Dispose();
         languageMenu.ShowImageMargin = false; languageMenu.ShowCheckMargin = false;
-        languageMenu.Renderer = new SoftMenuRenderer(() => SurfaceAlt, () => TextColor, () => Accent);
-        languageMenu.Padding = new Padding(5); languageMenu.Items.Clear(); languageMenu.Items.Add("Türkçe", null, (_, _) => SetLanguage("TR")); languageMenu.Items.Add("English", null, (_, _) => SetLanguage("EN"));
+        languageMenu.Renderer = new SelectorMenuRenderer(this);
+        languageMenu.Padding = new Padding(5);
+        languageMenu.Items.Clear();
+        foreach (var (title, code) in new[] { ("Türkçe", "TR"), ("English", "EN") })
+        {
+            var item = new ToolStripMenuItem(title) { AutoSize = false, Size = new Size(166, 38), Checked = settings.Language == code };
+            item.Click += (_, _) => SetLanguage(code);
+            languageMenu.Items.Add(item);
+        }
         var language = new SymbolButton { Symbol = "language", Width = 36, Height = 36, Tag = "icon", AccessibleName = T("Language", "Dil") };
         languageMenu.ToggleOwner = language;
         language.Click += (_, _) =>
         {
             if (languageMenu.Visible) languageMenu.Close();
-            else languageMenu.Show(language, new Point(language.Width, language.Height), ToolStripDropDownDirection.BelowLeft);
+            else languageMenu.Show(language, new Point(language.Width, -6), ToolStripDropDownDirection.AboveLeft);
         };
         var light = new SymbolButton { Symbol = lightMode ? "sun" : "moon", Width = 36, Height = 36, Tag = "icon", AccessibleName = T("Toggle theme", "Temayı değiştir") };
         light.Click += (_, _) => { lightMode = !lightMode; settings.LightMode = lightMode; SaveSettings(); BuildShellRefresh(); };
         tips.SetToolTip(language, T("Language", "Dil")); tips.SetToolTip(light, T("Toggle theme", "Temayı değiştir"));
-        header.Controls.Add(language); header.Controls.Add(light);
+        footer.Controls.Add(language); language.BringToFront();
+        void ArrangeFooterActions() => language.Location = new Point(Math.Max(0, footer.ClientSize.Width - 82), 6);
+        footer.SizeChanged += (_, _) => ArrangeFooterActions();
+        ArrangeFooterActions();
+        header.Controls.Add(light);
         void ArrangeHeaderActions()
         {
             traffic.Location = new Point(header.ClientSize.Width - traffic.Width, 13);
             settingsButton.Location = new Point(traffic.Left - 42, 13);
             light.Location = new Point(settingsButton.Left - 42, 13);
-            language.Location = new Point(light.Left - 42, 13);
         }
         header.Resize += (_, _) => ArrangeHeaderActions();
         ArrangeHeaderActions();
         root.Controls.Add(footer, 0, 2);
     }
 
-    void SetLanguage(string code) { settings.Language = code; english = code == "EN"; SaveSettings(); BuildShellRefresh(); }
+    void SetLanguage(string code) { settings.Language = code; english = code == "EN"; SaveSettings(); RefreshDiscordOptions(); BuildShellRefresh(); }
 
     void BuildShellRefresh()
     {
@@ -270,7 +299,44 @@ public sealed partial class MainForm : Form
         return b;
     }
 
-    TextBox MakeTextBox(string value = "") => new() { Text = value, BackColor = SurfaceAlt, ForeColor = TextColor, BorderStyle = BorderStyle.FixedSingle, Font = new Font(PreferredFontName(), 10) };
+    TextBox MakeTextBox(string value = "")
+    {
+        var input = new TextBox
+        {
+            Text = value, BackColor = SurfaceAlt, ForeColor = TextColor,
+            BorderStyle = BorderStyle.FixedSingle, Font = new Font(PreferredFontName(), 10)
+        };
+        var menu = new ContextMenuStrip { ShowImageMargin = false };
+        var copy = new ToolStripMenuItem(T("Copy", "Kopyala"));
+        var paste = new ToolStripMenuItem(T("Paste", "Yapıştır"));
+        var selectAll = new ToolStripMenuItem(T("Select all", "Tümünü seç"));
+        copy.Click += (_, _) => RunClipboardAction(() =>
+        {
+            if (input.SelectionLength > 0) WriteClipboardText(input.SelectedText);
+        });
+        paste.Click += (_, _) => RunClipboardAction(input.Paste);
+        selectAll.Click += (_, _) => input.SelectAll();
+        menu.Items.AddRange([copy, paste, selectAll]);
+        menu.Opening += (_, _) =>
+        {
+            copy.Enabled = input.SelectionLength > 0;
+            paste.Enabled = !input.ReadOnly;
+            selectAll.Enabled = input.TextLength > 0;
+        };
+        input.ContextMenuStrip = menu;
+        input.Disposed += (_, _) => menu.Dispose();
+        return input;
+    }
+
+    static void WriteClipboardText(string value) =>
+        Clipboard.SetDataObject(new DataObject(DataFormats.UnicodeText, value), copy: true, retryTimes: 5, retryDelay: 30);
+
+    void RunClipboardAction(Action action)
+    {
+        try { action(); }
+        catch (System.Runtime.InteropServices.ExternalException ex)
+        { ShowError(ex, T("Clipboard is unavailable", "Panoya erişilemedi")); }
+    }
     Label MakeLabel(string text, int size = 10, bool strong = false) => new() { Text = text, AutoSize = true, ForeColor = TextColor, Font = new Font(strong ? PreferredFontName() : "Segoe UI", size, strong ? FontStyle.Bold : FontStyle.Regular) };
 
     static string PreferredFontName()
@@ -285,9 +351,37 @@ public sealed partial class MainForm : Form
         control.Resize += (_, _) => Apply(); Apply();
     }
 
+    void UpdateModeNavigation(string key)
+    {
+        foreach (var button in navButtons)
+        {
+            string navKey = (string)button.Tag!;
+            ApplyNavigationColor(button, navKey == (key switch { "CurseForge" => "Addons", "CurseWorlds" => "Worlds", "CurseShaders" => "Mods", "CurseSkins" => "Skins", _ => key }));
+            button.Text = navKey == "Mods" && cinnabarMode ? T("Shaders", "Shaderlar") : NavText(navKey, "").Trim();
+            if (button is NavIconButton navIcon) navIcon.IconKey = navKey == "Mods" && cinnabarMode ? "sun" : navKey;
+            if (navKey is "Addons" or "Skins")
+            {
+                button.Visible = !cinnabarMode;
+                if (button.Parent is TableLayoutPanel nav) nav.RowStyles[nav.GetRow(button)].Height = cinnabarMode ? 0 : 42;
+            }
+        }
+    }
+
+    void ShowLauncherIntro()
+    {
+        if (settings.IntroSeen) return;
+        ShowThemedPopup("BedrockLoader", T("Start Minecraft from Home or switch to Cinnabar. Use the sidebar to manage mods, packs, skins and worlds. Logs and language are at the bottom right.",
+            "Ana ekrandan Minecraft’ı açabilir veya Cinnabar’a geçebilirsin. Modlar, paketler, skinler ve dünyalar sol menüde. Kayıtlar ve dil sağ altta."), false, T("Skip", "Geç"));
+        settings.IntroSeen = true;
+        SaveSettings();
+    }
+
     void ShowPage(string key, bool force = false)
     {
         if (!force && currentPage == key && contentHost.Controls.Count > 0) return;
+        if (currentPage is "CurseForge" or "CurseWorlds" or "CurseShaders" or "CurseSkins") DisposeCursePage();
+        if (currentPage == "Skins") DisposeSkinPage();
+        if (currentPage == "Servers") { serversView?.Dispose(); serversView = null; }
         currentPage = key;
         // Paint only after native child controls have their final colors and bounds.
         contentHost.Visible = false;
@@ -295,19 +389,22 @@ public sealed partial class MainForm : Form
         try
         {
         contentHost.Controls.Clear(); pageHeadingPanel = null;
-        foreach (var b in navButtons)
-        {
-            ApplyNavigationColor(b, Equals(b.Tag, key));
-            b.Text = NavText(key: (string)b.Tag!, glyph: "").Trim();
-        }
+        UpdateModeNavigation(key);
         switch (key)
         {
             case "Home": BuildComfortableHome(); break;
-            case "Mods": BuildModsPage(); break;
+            case "Mods": if (cinnabarMode) BuildCinnabarShaders(); else BuildModsPage(); break;
             case "Addons": BuildSoftAddons(); break;
+            case "Skins": BuildSkinPage(); break;
             case "Settings": BuildSettingsPage(); break;
+            case "Worlds": BuildWorldsPage(); break;
+            case "Servers": BuildServersPage(); break;
             case "Logs": BuildLogsPage(); break;
             case "Catalog": BuildModCatalogPage(); break;
+            case "CurseForge": BuildCurseForgePage(); break;
+            case "CurseWorlds": BuildCurseForgePage(true); break;
+            case "CurseSkins": BuildCurseForgePage(skins: true); break;
+            case "CurseShaders": BuildCurseForgePage(shaders: true); break;
             case "Updates": BuildUpdatesPage(); break;
             default: BuildComfortableAbout(); break;
         }
@@ -326,7 +423,7 @@ public sealed partial class MainForm : Form
 
     string NavText(string key, string glyph)
     {
-        string text = key switch { "Home" => T("Home", "Ana ekran"), "Mods" => T("Mods", "Modlar"), "Addons" => T("Packs", "Packler"), "Settings" => T("Settings", "Ayarlar"), "Logs" => T("Logs", "Kayıtlar"), _ => T("About", "Hakkında") };
+        string text = key switch { "Home" => T("Home", "Ana ekran"), "Mods" => T("Mods", "Modlar"), "Clients" => T("Client Manager", "Client Yöneticisi"), "Addons" => T("Packs", "Packler"), "Settings" => T("Settings", "Ayarlar"), "Skins" => T("Skins", "Skinler"), "Worlds" => T("Worlds", "Dünyalar"), "Servers" => T("Servers", "Sunucular"), "Logs" => T("Logs", "Kayıtlar"), _ => T("About", "Hakkında") };
         return text;
     }
 
@@ -334,8 +431,18 @@ public sealed partial class MainForm : Form
     {
         var block = new Panel { Dock = DockStyle.Top, Height = 64, BackColor = Surface, Tag = "page", Margin = Padding.Empty };
         pageHeadingPanel = block;
-        pageTitle.Text = title; pageTitle.Font = new Font("Segoe UI", 14, FontStyle.Bold); pageTitle.AutoSize = true; pageTitle.Location = new Point(0, 0);
+        string emoji = currentPage switch { "Home" => "👋", "Mods" => "🧩", "Addons" => "📦", "Logs" => "📝", "Settings" => "⚙️", "Catalog" => "🛍️", "Updates" => "🔄", "CurseForge" => "🔥", _ => "" };
+        pageTitle.Dock = DockStyle.None;
+        pageTitle.TextAlign = ContentAlignment.TopLeft;
+        pageSubtitle.Visible = true;
+        pageTitle.Text = emoji.Length == 0 ? title : $"{title} {emoji}"; pageTitle.Font = new Font("Segoe UI", 14, FontStyle.Bold); pageTitle.AutoSize = true; pageTitle.Location = new Point(0, 0);
         pageSubtitle.Text = subtitle; pageSubtitle.Font = new Font("Segoe UI", 9.5f); pageSubtitle.AutoSize = true; pageSubtitle.Location = new Point(0, 30);
+        if (currentPage is "Skins" or "Worlds" or "Servers")
+        {
+            string symbol = currentPage;
+            block.Paint += (_, e) => SoftIcons.Draw(e.Graphics, symbol, new RectangleF(1, 2, 23, 23), Accent, true);
+            pageTitle.Left = 31;
+        }
         block.Controls.Add(pageTitle); block.Controls.Add(pageSubtitle); contentHost.Controls.Add(block); block.BringToFront();
     }
 
@@ -374,10 +481,21 @@ public sealed partial class MainForm : Form
         var add = MakeButton(T("Add mod", "Mod ekle"), ChooseModFiles, 100); add.Tag = "primary"; add.Height = 32; add.Font = new Font("Segoe UI", 9);
         var refresh = MakeButton(T("Refresh", "Yenile"), RefreshMods, 100); refresh.Height = 32; refresh.Font = new Font("Segoe UI", 9);
         buttons.Controls.Add(add); buttons.Controls.Add(refresh);
+        string OtherFilesLabel() => showOtherModFiles
+            ? T("Hide other files", "Diğer dosyaları gizle") : T("Show hidden files", "Gizli dosyaları göster");
+        var otherFiles = MakeButton(OtherFilesLabel(), () =>
+        {
+            showOtherModFiles = !showOtherModFiles;
+            RefreshMods();
+        }, 176);
+        otherFiles.Height = refresh.Height;
+        otherFiles.Font = refresh.Font;
+        otherFiles.Click += (_, _) => otherFiles.Text = OtherFilesLabel();
+        buttons.Controls.Add(otherFiles);
         var menu = new ContextMenuStrip(); menu.Items.Add(T("Open mods folder", "Mod klasörünü aç"), null, (_, _) => OpenMods()); modList.ContextMenuStrip = menu;
         layout.Controls.Add(buttons, 0, 2); contentHost.Controls.Add(layout);
         AddPageHeading(T("Mods", "Modlar"), T("Manage your installed mods.", "Yüklü modlarını yönet.")); RefreshMods();
-        var catalog = MakeButton(T("View built-in mods", "Dahili modları gör"), () => ShowPage("Catalog"), 172);
+        var catalog = MakeButton(T("Mod Center", "Mod Merkezi"), () => ShowPage("Catalog"), 172);
         catalog.Height = 32; catalog.Font = new Font("Segoe UI", 9);
         // Reserve heading space so its title and action cannot overlap at 800px.
         if (pageHeadingPanel != null)
@@ -432,10 +550,11 @@ public sealed partial class MainForm : Form
     {
         AddPageHeading(T("Settings", "Ayarlar"), T("Choose the game path, language, and accent color.", "Oyun yolunu, dili ve vurgu rengini seç."));
         var scroll = new Panel { Dock = DockStyle.Fill, AutoScroll = true }; contentHost.Controls.Add(scroll);
-        var layout = new TableLayoutPanel { Dock = DockStyle.Top, Height = 260, ColumnCount = 2, RowCount = 4, Padding = new Padding(14, 8, 14, 8), BackColor = Surface };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Top, Height = 312, ColumnCount = 2, RowCount = 5, Padding = new Padding(14, 8, 14, 8), BackColor = Surface };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         for (int row = 0; row < 3; row++) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 152));
         scroll.Controls.Add(layout);
 
         layout.Controls.Add(MakeLabel(T("Content folder", "Content klasörü"), 10, true), 0, 0);
@@ -460,32 +579,51 @@ public sealed partial class MainForm : Form
         var theme = MakeThemeCombo(250);
         theme.Items.AddRange(new object[] { "Midnight", "Blue", "Purple", "Green", "Orange", "Red", "Material You" });
         theme.SelectedItem = settings.Theme; if (theme.SelectedIndex < 0) theme.SelectedIndex = 0;
-        theme.SelectedIndexChanged += (_, _) => { settings.Theme = theme.SelectedItem?.ToString() ?? "Midnight"; ApplyThemePalette(); SaveSettings(); ApplyTheme(); };
         layout.Controls.Add(theme, 1, 2);
+        var paletteLabel = MakeLabel(T("Color palette", "Renk paleti"), 10, true);
+        var materialColors = BuildMaterialColorChoices();
+        layout.Controls.Add(paletteLabel, 0, 3); layout.Controls.Add(materialColors, 1, 3);
+        void ShowMaterialColors()
+        {
+            bool visible = settings.Theme == "Material You";
+            layout.SuspendLayout();
+            paletteLabel.Visible = materialColors.Visible = visible;
+            layout.RowStyles[3].Height = visible ? 100 : 0;
+            layout.Height = visible ? 364 : 264;
+            layout.ResumeLayout(true);
+        }
+        theme.SelectedIndexChanged += (_, _) =>
+        {
+            settings.Theme = theme.SelectedItem?.ToString() ?? "Midnight";
+            ShowMaterialColors(); SaveSettings(); ApplyTheme();
+        };
+        ShowMaterialColors();
 
-        layout.Controls.Add(MakeLabel(T("Game shortcuts", "Oyun kısayolları"), 10, true), 0, 3);
+        layout.Controls.Add(MakeLabel(T("Game shortcuts", "Oyun kısayolları"), 10, true), 0, 4);
         var links = new TableLayoutPanel { Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right, Height = 96, ColumnCount = 2, RowCount = 2, Margin = Padding.Empty };
         links.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); links.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         links.RowStyles.Add(new RowStyle(SizeType.Absolute, 48)); links.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        links.Controls.Add(MakeButton(T("Launch Minecraft", "Minecraft'ı başlat"), LaunchGame, 155));
-        links.Controls.Add(MakeButton(T("Xbox / Store", "Xbox / Store"), OpenXboxMinecraftPage, 120));
         links.Controls.Add(MakeButton(T("Check for updates", "Güncellemeleri denetle"), () => ShowPage("Updates"), 180));
         var save = MakeButton(T("Save settings", "Ayarları kaydet"), () =>
         {
             if (string.IsNullOrWhiteSpace(path.Text)) { MessageBox.Show(this, T("Choose a folder first.", "Önce klasör seç.")); return; }
             settings.ContentPath = path.Text.Trim().Trim('"');
+            RefreshDiscordOptions();
             settings.Language = lang.SelectedIndex == 1 ? "EN" : "TR";
             english = settings.Language == "EN";
             SaveSettings(); BuildShellRefresh(); UpdateStatus(T("Settings saved.", "Ayarlar kaydedildi."));
         }, 135);
         links.Controls.Add(save);
+        var discord = MakeButton("Discord Rich Presence", ConfigureDiscordPresence, 170);
+        links.Controls.Add(discord);
+        links.SetColumnSpan(discord, 2);
         for (int i = 0; i < links.Controls.Count; i++)
         {
             var button = links.Controls[i]; button.Dock = DockStyle.Fill;
             button.Margin = new Padding(i % 2 == 0 ? 0 : 4, 0, i % 2 == 0 ? 4 : 0, 8);
             button.Font = new Font("Segoe UI", 9.5f);
         }
-        layout.Controls.Add(links, 1, 3);
+        layout.Controls.Add(links, 1, 4);
         foreach (Control label in layout.Controls)
             if (label is Label) { label.Anchor = AnchorStyles.Top | AnchorStyles.Left; label.Margin = new Padding(0, 10, 8, 0); }
 
@@ -502,10 +640,24 @@ public sealed partial class MainForm : Form
         var logCard = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 16, Padding = new Padding(12), Margin = Padding.Empty };
         var log = new ScrollTextBox { Dock = DockStyle.Fill, BackColor = Surface, ForeColor = TextColor, Font = new Font("Consolas", 10), Text = ReadLogs() };
         logCard.Controls.Add(log); layout.Controls.Add(logCard, 0, 0);
-        var actions = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 12, 0, 0), Tag = "page", Margin = Padding.Empty };
-        var refresh = MakeButton(T("Refresh logs", "Kayıtları yenile"), () => { LogAction("Viewed logs"); log.Text = ReadLogs(); }, 120);
-        refresh.Dock = DockStyle.Fill; refresh.Margin = Padding.Empty;
-        actions.Controls.Add(refresh); layout.Controls.Add(actions, 0, 1);
+        var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(0, 12, 0, 0), Tag = "page", Margin = Padding.Empty };
+        actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        actions.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        var refresh = MakeButton(T("Refresh logs", "Kayıtları yenile"), () => log.Text = ReadLogs(), 120);
+        refresh.Dock = DockStyle.Fill; refresh.Margin = new Padding(0, 0, 5, 0);
+        var clear = MakeButton(T("Clear logs", "Kayıtları temizle"), () =>
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(logFile)!);
+                File.WriteAllText(logFile, string.Empty);
+                log.Text = ReadLogs();
+                UpdateStatus(T("Logs cleared.", "Kayıtlar temizlendi."));
+            }
+            catch (Exception ex) { ShowError(ex, T("Could not clear logs", "Kayıtlar temizlenemedi")); }
+        }, 120);
+        clear.Dock = DockStyle.Fill; clear.Margin = new Padding(5, 0, 0, 0);
+        actions.Controls.Add(refresh, 0, 0); actions.Controls.Add(clear, 1, 0); layout.Controls.Add(actions, 0, 1);
         contentHost.Controls.Add(layout);
     }
 
@@ -516,7 +668,11 @@ public sealed partial class MainForm : Form
 
     string ReadLogs()
     {
-        try { return File.Exists(logFile) ? File.ReadAllText(logFile) : T("No actions recorded yet.", "Henüz işlem kaydı yok."); }
+        try
+        {
+            string contents = File.Exists(logFile) ? File.ReadAllText(logFile) : "";
+            return string.IsNullOrWhiteSpace(contents) ? T("No actions recorded yet.", "Henüz işlem kaydı yok.") : contents;
+        }
         catch { return T("Could not read logs.", "Kayıtlar okunamadı."); }
     }
 
@@ -614,7 +770,9 @@ public sealed partial class MainForm : Form
     void RefreshMods()
     {
         Directory.CreateDirectory(modsFolder); modList.BeginUpdate(); modList.Items.Clear();
-        foreach (var f in Directory.GetFiles(modsFolder, "*", SearchOption.AllDirectories).OrderBy(x => x, StringComparer.OrdinalIgnoreCase)) modList.Items.Add(Path.GetRelativePath(modsFolder, f), false);
+        foreach (var f in Directory.EnumerateFiles(modsFolder, "*", SearchOption.AllDirectories)
+            .Where(file => showOtherModFiles || Path.GetExtension(file).Equals(".dll", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(file => file, StringComparer.OrdinalIgnoreCase)) modList.Items.Add(Path.GetRelativePath(modsFolder, f), false);
         modList.EndUpdate(); if (modCountLabel != null) modCountLabel.Text = $"{modList.Items.Count} {T("mods", "mod")}"; deleteModsReveal?.SetShown(false, animate: false);
     }
 
@@ -837,18 +995,68 @@ public sealed partial class MainForm : Form
 
     void LaunchGame()
     {
-        if (!MinecraftInstallation.IsInstalled(settings.ContentPath)) { OpenXboxMinecraftPage(); return; }
-        try { Process.Start(new ProcessStartInfo { FileName = "minecraft:", UseShellExecute = true }); }
-        catch
+        if (!MinecraftInstallation.IsInstalled(settings.ContentPath)) { _ = InstallMinecraftAsync(); return; }
+        if (!MinecraftInstallation.TryLaunch(settings.ContentPath))
+            ShowThemedPopup(T("Launch failed", "Oyun açılamadı"),
+                T("Minecraft for Windows could not be launched.", "Minecraft for Windows başlatılamadı."));
+    }
+
+    const string MinecraftStoreId = "9NBLGGH2JHXJ";
+    bool installingMinecraft;
+
+    async Task InstallMinecraftAsync()
+    {
+        if (installingMinecraft) return;
+        installingMinecraft = true;
+        try
         {
-            try { Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = @"shell:AppsFolder\Microsoft.MinecraftUWP_8wekyb3d8bbwe!App", UseShellExecute = true }); }
-            catch { MessageBox.Show(this, T("Minecraft for Windows could not be launched. Check if it's installed.", "Minecraft for Windows açılamadı. Oyunun kurulu olup olmadığını kontrol et."), T("Launch failed", "Oyun açılamadı"), MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+            if (ShowThemedPopup(T("Install Minecraft", "Minecraft’ı yükle"),
+                T("Start installation through Microsoft Store using your Windows account?",
+                  "Windows hesabınla Microsoft Store üzerinden kurulum başlatılsın mı?"),
+                true, T("Install", "Yükle")) != DialogResult.Yes) return;
+
+            string winget = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps", "winget.exe");
+            var command = new ProcessStartInfo(winget) { UseShellExecute = false, CreateNoWindow = true };
+            foreach (string argument in new[] { "install", "--id", MinecraftStoreId, "--exact", "--source", "msstore", "--disable-interactivity" })
+                command.ArgumentList.Add(argument);
+
+            UpdateStatus(T("Microsoft Store installation in progress…", "Microsoft Store kurulumu sürüyor…"));
+            int? exitCode = null;
+            try
+            {
+                using var process = Process.Start(command);
+                if (process != null)
+                {
+                    await process.WaitForExitAsync(updatesLifetime.Token);
+                    exitCode = process.ExitCode;
+                }
+            }
+            catch (System.ComponentModel.Win32Exception) { }
+
+            if (IsDisposed) return;
+            if (MinecraftInstallation.IsInstalled(settings.ContentPath))
+            {
+                if (minecraftLaunchButton is { IsDisposed: false } button)
+                    button.Text = T("Launch Minecraft", "Minecraft'ı başlat");
+                UpdateStatus(T("Minecraft is ready to launch.", "Minecraft başlatmaya hazır."));
+                return;
+            }
+
+            LogAction($"Minecraft Store installation was not detected (WinGet exit: {exitCode?.ToString() ?? "unavailable"}).");
+            UpdateStatus(T("Minecraft installation could not be verified.", "Minecraft kurulumu doğrulanamadı."));
+            if (ShowThemedPopup(T("Continue in Microsoft Store", "Microsoft Store’da devam et"),
+                T("Installation could not be completed in the launcher. Open the Store to check your account and install Minecraft.",
+                  "Kurulum launcher’da tamamlanamadı. Hesabını kontrol etmek ve Minecraft’ı yüklemek için Store’u aç."),
+                true, T("Open Store", "Store’u aç")) == DialogResult.Yes)
+                OpenXboxMinecraftPage();
         }
+        catch (OperationCanceledException) { }
+        finally { installingMinecraft = false; }
     }
 
     void OpenXboxMinecraftPage()
     {
-        try { Process.Start(new ProcessStartInfo { FileName = "ms-windows-store://pdp/?productid=9NBLGGH2JHXJ", UseShellExecute = true }); LogAction("Opened Microsoft Store product page"); } catch { OpenUrl("ms-windows-store://pdp/?productid=9NBLGGH2JHXJ"); }
+        try { Process.Start(new ProcessStartInfo { FileName = "ms-windows-store://pdp/?productid=" + MinecraftStoreId, UseShellExecute = true }); LogAction("Opened Microsoft Store product page"); } catch { OpenUrl("ms-windows-store://pdp/?productid=" + MinecraftStoreId); }
     }
 
     void ApplyThemePalette()
@@ -856,7 +1064,10 @@ public sealed partial class MainForm : Form
         TextColor = Color.FromArgb(228, 230, 235); Muted = Color.FromArgb(188, 198, 208);
         if (settings.Theme == "Material You")
         {
-            Bg = Color.FromArgb(20, 18, 28); Surface = Color.FromArgb(37, 32, 49); SurfaceAlt = Color.FromArgb(60, 51, 78);
+            Color seed = MaterialAccent();
+            Bg = MixColors(Color.FromArgb(12, 13, 18), seed, 0.06);
+            Surface = MixColors(Color.FromArgb(22, 23, 29), seed, 0.10);
+            SurfaceAlt = MixColors(Color.FromArgb(32, 33, 40), seed, 0.17);
         }
         else
         {
@@ -869,7 +1080,7 @@ public sealed partial class MainForm : Form
             "Green" => Color.FromArgb(74, 210, 150),
             "Orange" => Color.FromArgb(255, 165, 80),
             "Red" => Color.FromArgb(255, 95, 105),
-            "Material You" => Color.FromArgb(190, 170, 255),
+            "Material You" => MaterialAccent(),
             _ => Color.FromArgb(50, 190, 240)
         };
     }
@@ -889,6 +1100,12 @@ public sealed partial class MainForm : Form
     void ApplyButtonPalette(AnimatedRoundButton button)
     {
         button.FocusBorderColor = Accent;
+        if (button is MaterialColorButton swatch)
+        {
+            button.BackColor = swatch.SwatchColor;
+            button.ForeColor = ReadableText(swatch.SwatchColor);
+            return;
+        }
         if (button.Text.Contains("Delete checked", StringComparison.OrdinalIgnoreCase) || button.Text.Contains("Seçilenleri sil", StringComparison.OrdinalIgnoreCase))
         {
             button.BackColor = Color.FromArgb(220, 55, 65);
@@ -947,6 +1164,13 @@ public sealed partial class MainForm : Form
         SurfaceAlt = Color.FromArgb(226, 231, 241);
         TextColor = Color.FromArgb(27, 33, 47);
         Muted = Color.FromArgb(90, 99, 116);
+        if (settings.Theme == "Material You")
+        {
+            var seed = MaterialAccent();
+            Bg = MixColors(Color.FromArgb(246, 246, 250), seed, 0.08);
+            Surface = MixColors(Color.White, seed, 0.06);
+            SurfaceAlt = MixColors(Color.FromArgb(240, 240, 245), seed, 0.20);
+        }
     }
 
     void ApplyTheme()
@@ -983,10 +1207,17 @@ public sealed partial class MainForm : Form
         foreach (Control c in root.Controls)
         {
             if (c is Panel || c is TableLayoutPanel || c is FlowLayoutPanel) { if (Equals(c.Tag, "shell") || Equals(c.Tag, "traffic")) c.BackColor = Bg; else if (Equals(c.Tag, "card") || c is RoundedPanel) c.BackColor = SurfaceAlt; else c.BackColor = Surface; }
+            if (c.Tag is "server-latency" or "server-latency-ready" && c.Controls[0] is Label latency)
+            {
+                ApplyLatencyPalette(c, latency);
+                continue;
+            }
             if (c is TextBox tb) { tb.BackColor = SurfaceAlt; tb.ForeColor = TextColor; }
             if (c is ListBox lb) { lb.BackColor = SurfaceAlt; lb.ForeColor = TextColor; }
             if (c is SpacedCheckedListBox checks) checks.CheckAccent = Accent;
             if (c is ComboBox cb) { cb.BackColor = SurfaceAlt; cb.ForeColor = TextColor; }
+            if (c is PictureBox) c.BackColor = SurfaceAlt;
+            if (c is AboutLogo) { c.ForeColor = TextColor; c.Invalidate(); }
             if (c is Label label) { label.ForeColor = label.Font.Size <= 9 ? Muted : TextColor; }
             if (c is Button button)
             {
@@ -1012,6 +1243,8 @@ public sealed partial class MainForm : Form
             {
                 var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(settingsFile)) ?? new AppSettings();
                 if (!new[] { "Midnight", "Blue", "Purple", "Green", "Orange", "Red", "Material You" }.Contains(loaded.Theme)) loaded.Theme = "Blue";
+                if (!MaterialColors.Any(choice => choice.Id == loaded.MaterialYouColor)) loaded.MaterialYouColor = "Lavender";
+                loaded.Servers ??= [];
                 return loaded;
             }
         }
@@ -1021,8 +1254,20 @@ public sealed partial class MainForm : Form
 
     void SaveSettings()
     {
-        try { Directory.CreateDirectory(Path.GetDirectoryName(settingsFile)!); File.WriteAllText(settingsFile, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true })); }
+        try { WriteSettings(); }
         catch (Exception ex) { ShowError(ex, T("Settings save error", "Ayar kaydetme hatası")); }
+    }
+
+    void WriteSettings()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(settingsFile)!);
+        string temporary = settingsFile + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            File.WriteAllText(temporary, JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+            File.Move(temporary, settingsFile, overwrite: true);
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
     static string ResolveComMojangRoot()
@@ -1107,7 +1352,15 @@ public sealed partial class MainForm : Form
         public int CornerRadius { get; set; } = 18;
         public RoundedPanel() { SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true); }
         protected override void OnPaintBackground(PaintEventArgs e) { e.Graphics.Clear(Parent?.BackColor ?? BackColor); }
-        protected override void OnPaint(PaintEventArgs e) { e.Graphics.SmoothingMode = SmoothingMode.AntiAlias; e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality; using var path = RoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), CornerRadius); using var brush = new SolidBrush(BackColor); e.Graphics.FillPath(brush, path); }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            using var path = RoundedPath(new Rectangle(0, 0, Width - 1, Height - 1), CornerRadius);
+            using var brush = new SolidBrush(BackColor);
+            e.Graphics.FillPath(brush, path);
+            base.OnPaint(e);
+        }
     }
 
     static GraphicsPath RoundedPath(Rectangle bounds, int radius)
@@ -1119,9 +1372,16 @@ public sealed partial class MainForm : Form
 
     sealed class AppSettings
     {
+        public List<SavedServer> Servers { get; set; } = [];
+        public bool IntroSeen { get; set; }
+        public string CinnabarExecutable { get; set; } = "";
+        public string CinnabarInstalledTag { get; set; } = "";
+        public List<ClientProfile> ClientProfiles { get; set; } = [];
+        public DiscordOptions Discord { get; set; } = new();
         public string ContentPath { get; set; } = @"C:\XboxGames\Minecraft for Windows\Content";
         public string Language { get; set; } = "TR";
         public string Theme { get; set; } = "Blue";
+        public string MaterialYouColor { get; set; } = "Lavender";
         public bool LightMode { get; set; } = false;
     }
 }

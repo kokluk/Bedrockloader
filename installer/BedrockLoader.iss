@@ -1,19 +1,15 @@
-﻿#ifndef PayloadDir
-  #define PayloadDir "..\installer-payload-v0.15.12"
+#ifndef PayloadDir
+  #define PayloadDir "..\installer-payload-v0.16.10"
 #endif
 #ifndef ProjectDir
-  #if DirExists(SourcePath + "..\BedrockLoader-v0.12")
-    #define ProjectDir "..\BedrockLoader-v0.12"
-  #else
-    #define ProjectDir ".."
-  #endif
+  #define ProjectDir ".."
 #endif
 
 [Setup]
 AppId={{7B8B8A23-6749-4C7D-9D23-420A29B0F11B}
 AppName=BedrockLoader
-AppVersion=0.15.12
-AppVerName=BedrockLoader v0.15.12
+AppVersion=0.16.10
+AppVerName=BedrockLoader v0.16.10
 AppPublisher=Kokluk
 AppPublisherURL=https://github.com/kokluk/Bedrockloader
 AppSupportURL=https://github.com/kokluk/Bedrockloader/issues
@@ -26,14 +22,14 @@ ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 LicenseFile={#ProjectDir}\LICENSE
 OutputDir=..\installer-output
-OutputBaseFilename=BedrockLoader-Setup-v0.15.12-x64
-VersionInfoVersion=0.15.12.0
+OutputBaseFilename=BedrockLoader-Setup-v0.16.10-x64
+VersionInfoVersion=0.16.10.0
 SetupIconFile={#ProjectDir}\Assets\BedrockLoader.ico
 UninstallDisplayIcon={app}\BedrockLoader.exe
 WizardStyle=modern dynamic windows11 hidebevels includetitlebar
 WizardBackColor=#f2f4fa
 WizardBackColorDynamicDark=#202020
-Compression=lzma2/normal
+Compression=lzma2/ultra64
 SolidCompression=yes
 CloseApplications=yes
 RestartApplications=no

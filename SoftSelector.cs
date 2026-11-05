@@ -4,7 +4,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm
 {
-    sealed class ToggleContextMenu : ContextMenuStrip
+    class ToggleContextMenu : ContextMenuStrip
     {
         public Control? ToggleOwner { get; set; }
         protected override void OnClosing(ToolStripDropDownClosingEventArgs e)
@@ -20,11 +20,112 @@ public sealed partial class MainForm
         }
     }
 
+    sealed class SelectorMenu : ToggleContextMenu
+    {
+        public SelectorMenu()
+        {
+            DropShadowEnabled = false;
+            Padding = new Padding(1, 0, 1, 7);
+            reveal.Tick += (_, _) =>
+            {
+                double t = Math.Clamp(System.Diagnostics.Stopwatch.GetElapsedTime(openedAt).TotalMilliseconds / 230, 0, 1);
+                UpdateRegion(1 - Math.Pow(1 - t, 3));
+                if (t >= 1) reveal.Stop();
+            };
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) reveal.Dispose();
+            base.Dispose(disposing);
+        }
+        readonly System.Windows.Forms.Timer reveal = new() { Interval = 15 };
+        long openedAt;
+        public bool AnimateOpening { get; init; }
+
+        protected override void OnOpened(EventArgs e)
+        {
+            base.OnOpened(e);
+            if (!AnimateOpening || AnimatedRoundButton.ReducedMotion) return;
+            openedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+            UpdateRegion(0);
+            reveal.Start();
+        }
+
+        protected override void OnClosed(ToolStripDropDownClosedEventArgs e)
+        {
+            reveal.Stop();
+            UpdateRegion(1);
+            base.OnClosed(e);
+        }
+
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            UpdateRegion(1);
+        }
+
+        void UpdateRegion(double amount)
+        {
+            if (Width < 2 || Height < 2) return;
+            int height = Math.Clamp((int)Math.Round(Height * amount), Math.Min(12, Height), Height);
+            using var path = RoundedPath(new Rectangle(0, Height - height, Width, height), Math.Min(18, height / 2));
+            var previous = Region;
+            Region = new Region(path);
+            previous?.Dispose();
+        }
+    }
+
+    sealed class SelectorMenuRenderer(MainForm owner) : ToolStripProfessionalRenderer
+    {
+        protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e) => e.Graphics.Clear(owner.SurfaceAlt);
+        protected override void OnRenderImageMargin(ToolStripRenderEventArgs e) { }
+        protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e) { }
+        protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+        {
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using var path = RoundedPath(new Rectangle(0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1), 18);
+            using var pen = new Pen(MixColors(owner.SurfaceAlt, owner.Accent, 0.6), 1);
+            e.Graphics.DrawPath(pen, path);
+        }
+        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+        {
+            bool header = e.Item.Tag is string;
+            if (!header && (e.Item.Selected || e.Item is ToolStripMenuItem { Checked: true }))
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = RoundedPath(new Rectangle(6, 2, Math.Max(1, e.Item.Width - 12), e.Item.Height - 4), 12);
+                using var fill = new SolidBrush(MixColors(owner.SurfaceAlt, owner.Accent, e.Item.Selected ? 0.22 : 0.13));
+                e.Graphics.FillPath(fill, path);
+            }
+            if (header)
+            {
+                using var pen = new Pen(MixColors(owner.SurfaceAlt, owner.TextColor, 0.12));
+                e.Graphics.DrawLine(pen, 14, e.Item.Height - 1, e.Item.Width - 14, e.Item.Height - 1);
+            }
+        }
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        {
+            TextRenderer.DrawText(e.Graphics, e.Text, e.TextFont,
+                new Rectangle(14, 0, Math.Max(0, e.Item.Width - 54), e.Item.Height), owner.TextColor,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            if (e.Item.Tag is string)
+            {
+                using var pen = new Pen(owner.TextColor, 1.8f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+                float x = e.Item.Width - 24, y = e.Item.Height / 2f;
+                e.Graphics.DrawLines(pen, new[] { new PointF(x - 4, y + 2), new PointF(x, y - 2), new PointF(x + 4, y + 2) });
+            }
+            else if (e.Item is ToolStripMenuItem { Checked: true })
+                SoftIcons.Draw(e.Graphics, "check-mark", new RectangleF(e.Item.Width - 34, (e.Item.Height - 18) / 2f, 18, 18), owner.Accent);
+        }
+    }
+
     // A painted selector avoids the system ComboBox's unthemed arrow surface.
     sealed class SoftSelector : AnimatedRoundButton
     {
         readonly MainForm owner;
-        readonly ToggleContextMenu menu = new() { ShowImageMargin = false, ShowCheckMargin = false };
+        readonly SelectorMenu menu = new() { ShowImageMargin = false, ShowCheckMargin = false };
         int selectedIndex = -1;
         public List<object> Items { get; } = new();
         public event EventHandler? SelectedIndexChanged;
@@ -48,7 +149,7 @@ public sealed partial class MainForm
             menu.ToggleOwner = this;
             menu.Opened += (_, _) => Invalidate();
             menu.Closed += (_, _) => Invalidate();
-            menu.Renderer = new SoftMenuRenderer(() => owner.SurfaceAlt, () => owner.TextColor, () => owner.Accent);
+            menu.Renderer = new SelectorMenuRenderer(owner);
         }
         protected override void OnClick(EventArgs e)
         {
@@ -56,15 +157,20 @@ public sealed partial class MainForm
             if (menu.Visible) { menu.Close(); return; }
             menu.Items.Clear(); menu.BackColor = owner.SurfaceAlt; menu.ForeColor = owner.TextColor; menu.Font = Font;
             menu.MinimumSize = new Size(Width, 0);
+            menu.MaximumSize = new Size(Width, 0);
+            var header = new ToolStripMenuItem(Text) { Tag = "selector-header", AutoSize = false, Size = new Size(Math.Max(Width - 2, 120), Height) };
+            header.Click += (_, _) => { menu.Close(); Focus(); };
+            menu.Items.Add(header);
             for (int i = 0; i < Items.Count; i++)
             {
                 int index = i;
-                var item = new ToolStripMenuItem(Items[i].ToString()) { AutoSize = false, Size = new Size(Math.Max(Width - 4, 120), 36) };
+                var item = new ToolStripMenuItem(Items[i].ToString()) { AutoSize = false, Size = new Size(Math.Max(Width - 2, 120), 38), Checked = i == selectedIndex };
                 item.Click += (_, _) => { SelectedIndex = index; Focus(); };
                 menu.Items.Add(item);
             }
-            menu.Show(this, new Point(0, Height + 4));
-            if (selectedIndex >= 0) menu.Items[selectedIndex].Select();
+            // The selected header and options share one surface over the trigger.
+            menu.Show(this, Point.Empty);
+            if (selectedIndex >= 0) menu.Items[selectedIndex + 1].Select();
         }
         protected override void OnKeyDown(KeyEventArgs e)
         {

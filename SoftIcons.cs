@@ -16,7 +16,7 @@ internal static class SoftIcons
             graphics.ScaleTransform(bounds.Width / 24f, bounds.Height / 24f);
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-            using var pen = new Pen(color, 1.8f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+            using var pen = new Pen(color, 1.95f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
             using var fill = new SolidBrush(Color.FromArgb(emphasized ? 68 : 28, color));
             using var solid = new SolidBrush(color);
             void Shape(GraphicsPath path)
@@ -26,6 +26,47 @@ internal static class SoftIcons
             void Line(float x, float y, float x2, float y2) => graphics.DrawLine(pen, x, y, x2, y2);
             switch (key)
             {
+                case "Servers":
+                    Shape(Round(3, 4, 18, 6, 2));
+                    Shape(Round(3, 14, 18, 6, 2));
+                    Line(6.5f, 7, 8, 7); Line(6.5f, 17, 8, 17);
+                    break;
+                case "search":
+                    graphics.DrawEllipse(pen, 4, 4, 11, 11);
+                    Line(13.5f, 13.5f, 20, 20);
+                    break;
+                case "trash":
+                    Shape(Round(6, 7, 12, 14, 2));
+                    Line(4, 7, 20, 7); Line(9, 4, 15, 4); Line(10, 10, 10, 17); Line(14, 10, 14, 17);
+                    break;
+                case "skin-star":
+                    var star = Enumerable.Range(0, 10).Select(i =>
+                    {
+                        double angle = i * Math.PI / 5 - Math.PI / 2;
+                        double radius = i % 2 == 0 ? 10 : 4.7;
+                        return new PointF(12 + (float)(Math.Cos(angle) * radius), 12 + (float)(Math.Sin(angle) * radius));
+                    }).ToArray();
+                    using (var outline = new Pen(color, 1.8f) { LineJoin = LineJoin.Round })
+                    {
+                        graphics.FillPolygon(solid, star);
+                        graphics.DrawPolygon(outline, star);
+                    }
+                    break;
+                case "skin-pack":
+                    using (var folder = new GraphicsPath())
+                    {
+                        folder.AddPolygon(new Point[] {new Point(3, 6), new Point(9, 6), new Point(11, 8), new Point(21, 8), new Point(21, 19), new Point(3, 19) });
+                        graphics.FillPath(fill, folder);
+                        graphics.DrawPath(pen, folder);
+                    }
+                    graphics.DrawRectangle(pen, 9, 11, 6, 5);
+                    break;
+                case "game-switch":
+                    graphics.DrawArc(pen, 4, 4, 16, 16, 205, 145);
+                    graphics.DrawArc(pen, 4, 4, 16, 16, 25, 145);
+                    Line(20, 4, 20, 10); Line(15, 10, 20, 10);
+                    Line(4, 20, 4, 14); Line(4, 14, 9, 14);
+                    break;
                 case "update":
                     graphics.FillEllipse(fill, 3, 3, 18, 18);
                     graphics.DrawArc(pen, 4, 4, 16, 16, 35, 290);
@@ -43,6 +84,7 @@ internal static class SoftIcons
                         using var door = new GraphicsPath(); door.AddLine(9, 21, 9, 16); door.AddBezier(9, 16, 9, 12.5f, 15, 12.5f, 15, 16); door.AddLine(15, 16, 15, 21); graphics.DrawPath(pen, door);
                     }
                     break;
+                case "Clients":
                 case "Mods":
                     using (var p = new GraphicsPath())
                     {
@@ -65,6 +107,14 @@ internal static class SoftIcons
                         {
                             using var layer = new GraphicsPath(); layer.AddLine(3, y, 10, y + 4); layer.AddBezier(10, y + 4, 11, y + 4.6f, 13, y + 4.6f, 14, y + 4); layer.AddLine(14, y + 4, 21, y); graphics.DrawPath(pen, layer);
                         }
+                    }
+                    break;
+                case "Skins":
+                    graphics.FillEllipse(fill, 8, 3, 8, 8); graphics.DrawEllipse(pen, 8, 3, 8, 8);
+                    using (var p = new GraphicsPath())
+                    {
+                        p.AddBezier(4, 20, 4, 11, 20, 11, 20, 20);
+                        p.CloseFigure(); graphics.FillPath(fill, p); graphics.DrawPath(pen, p);
                     }
                     break;
                 case "Logs":
@@ -95,6 +145,11 @@ internal static class SoftIcons
                 case "sun":
                     graphics.FillEllipse(fill, 7, 7, 10, 10); graphics.DrawEllipse(pen, 7, 7, 10, 10);
                     for (int i = 0; i < 8; i++) { double a = i * Math.PI / 4; Line(12 + (float)Math.Cos(a) * 8, 12 + (float)Math.Sin(a) * 8, 12 + (float)Math.Cos(a) * 10, 12 + (float)Math.Sin(a) * 10); } break;
+                case "Worlds":
+                    graphics.FillEllipse(fill, 3, 3, 18, 18);
+                    graphics.DrawEllipse(pen, 3, 3, 18, 18);
+                    graphics.DrawEllipse(pen, 8, 3, 8, 18);
+                    Line(4, 12, 20, 12); break;
                 case "settings":
                     var points = Enumerable.Range(0, 16).Select(i => { double a = i * Math.PI / 8 - Math.PI / 2; float r = i % 2 == 0 ? 9.6f : 8.1f; return new PointF(12 + (float)Math.Cos(a) * r, 12 + (float)Math.Sin(a) * r); }).ToArray();
                     using (var p = new GraphicsPath()) { p.AddClosedCurve(points, 0.6f); graphics.FillPath(fill, p); graphics.DrawPath(pen, p); }
@@ -105,6 +160,44 @@ internal static class SoftIcons
                         p.AddBezier(9, 5.5f, 8, 5, 7, 5.5f, 7, 6.8f); p.AddLine(7, 6.8f, 7, 17.2f); p.AddBezier(7, 17.2f, 7, 18.5f, 8, 19, 9, 18.5f);
                         p.AddLine(9, 18.5f, 18, 13.2f); p.AddBezier(18, 13.2f, 19.3f, 12.5f, 19.3f, 11.5f, 18, 10.8f); p.AddLine(18, 10.8f, 9, 5.5f); p.CloseFigure(); graphics.FillPath(solid, p);
                     }
+                    break;
+                case "download":
+                    Line(12, 3, 12, 15); Line(7.5f, 10.5f, 12, 15); Line(12, 15, 16.5f, 10.5f);
+                    using (var p = new GraphicsPath())
+                    {
+                        p.AddLine(4, 15, 4, 18); p.AddBezier(4, 18, 4, 20, 5, 21, 7, 21);
+                        p.AddLine(7, 21, 17, 21); p.AddBezier(17, 21, 19, 21, 20, 20, 20, 18); p.AddLine(20, 18, 20, 15);
+                        graphics.DrawPath(pen, p);
+                    }
+                    break;
+                case "github":
+                    using (var p = new GraphicsPath())
+                    {
+                        p.AddBezier(5, 8, 4, 5, 5, 2.5f, 6, 3); p.AddLine(6, 3, 9, 5);
+                        p.AddBezier(9, 5, 11, 4.5f, 13, 4.5f, 15, 5); p.AddLine(15, 5, 18, 3);
+                        p.AddBezier(18, 3, 19, 2.5f, 20, 5, 19, 8);
+                        p.AddBezier(19, 8, 23, 15, 19, 18, 14, 18);
+                        p.AddBezier(14, 18, 15, 19, 15, 20, 15, 22); p.AddLine(15, 22, 9, 22);
+                        p.AddBezier(9, 22, 9, 20, 9, 19, 10, 18);
+                        p.AddBezier(10, 18, 5, 18, 1, 15, 5, 8); p.CloseFigure();
+                        graphics.FillPath(solid, p);
+                    }
+                    using (var p = new GraphicsPath()) { p.AddBezier(9, 20, 4, 22, 4, 17, 2, 17); graphics.DrawPath(pen, p); }
+                    break;
+                case "discord":
+                    using (var p = new GraphicsPath())
+                    {
+                        p.AddBezier(3, 7, 5, 5, 7, 4.5f, 9, 4.5f); p.AddLine(9, 4.5f, 10, 6);
+                        p.AddBezier(10, 6, 11, 5.8f, 13, 5.8f, 14, 6); p.AddLine(14, 6, 15, 4.5f);
+                        p.AddBezier(15, 4.5f, 17, 4.5f, 19, 5, 21, 7);
+                        p.AddBezier(21, 7, 22, 10, 23, 14, 22, 17);
+                        p.AddBezier(22, 17, 20, 19, 18, 20, 16, 20); p.AddLine(16, 20, 14.5f, 17.5f);
+                        p.AddBezier(14.5f, 17.5f, 13, 18, 11, 18, 9.5f, 17.5f); p.AddLine(9.5f, 17.5f, 8, 20);
+                        p.AddBezier(8, 20, 6, 20, 4, 19, 2, 17); p.AddBezier(2, 17, 1, 14, 2, 10, 3, 7); p.CloseFigure();
+                        graphics.FillPath(fill, p); graphics.DrawPath(pen, p);
+                    }
+                    graphics.FillEllipse(solid, 6.5f, 10, 3, 4); graphics.FillEllipse(solid, 14.5f, 10, 3, 4);
+                    graphics.DrawArc(pen, 6, 12, 12, 4, 25, 130);
                     break;
                 case "external":
                     using (var p = new GraphicsPath()) { p.AddBezier(10, 4, 4, 3, 3, 5, 3, 8); p.AddLine(3, 8, 3, 17); p.AddBezier(3, 17, 3, 20, 4, 21, 7, 21); p.AddLine(7, 21, 16, 21); p.AddBezier(16, 21, 20, 21, 21, 20, 20, 14); graphics.DrawPath(pen, p); }

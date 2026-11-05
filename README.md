@@ -1,6 +1,6 @@
-﻿# BedrockLoader
+# BedrockLoader
 
-Minecraft Bedrock için Windows mod ve paket yöneticisi. Güncel sürüm: **v0.15.12**.
+Minecraft Bedrock için Windows mod, paket ve sunucu yöneticisi. Kaynak sürümü **v0.16.10**.
 
 - Mod dosyalarını ekleme, sürükle-bırak ve onayla silme.
 - Kaynak ve davranış paketlerini ayrı sütunlarda yönetme; `.mcpack`, `.mcaddon` ve uyumlu ZIP yükleme.
@@ -8,17 +8,7 @@ Minecraft Bedrock için Windows mod ve paket yöneticisi. Güncel sürüm: **v0.
 - Yeni sürüm bildirimi; indirme ve kurulum kullanıcı onayına bağlıdır.
 - Türkçe/İngilizce, Windows temasını izleyen açık/koyu gri kurulum sihirbazı.
 
-## v0.15.12 değişiklikleri
-
-- Minecraft kurulu değilse ana düğme Store sayfasını açan “Minecraft’ı yükle” eylemine dönüşür.
-- Modloader izin penceresi tema renklerini, yuvarlak köşeleri ve sağ üst kapatma düğmesini kullanır.
-- Popup alt düğmelerinin kesilmesi düzeltildi; Hakkında bağlantısı “GitHub” olarak sadeleştirildi.
-
 ## Windows kurulumu
-
-Kurulum dosyası: `BedrockLoader-Setup-v0.15.12-x64.exe`. Windows 10/11 x64 için hazırlanır; .NET çalışma zamanı dahildir. Kurulum kullanıcı hesabına yapılır ve yönetici izni gerektirmez.
-
-[v0.15.12 Windows x64 kurulumunu indir](https://github.com/kokluk/Bedrockloader/releases/download/v0.15.12/BedrockLoader-Setup-v0.15.12-x64.exe)
 
 [Yayınlanan sürümler](https://github.com/kokluk/Bedrockloader/releases)
 
@@ -36,13 +26,13 @@ Inno Setup 6.7.3 ile kurulum paketi üretmek için:
 .\installer\build.ps1 -IsccPath 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 ```
 
-Kurulum çıktısı `installer-output/`, bağımsız uygulama dosyaları `installer-payload-v0.15.12/` altında oluşur.
+Kurulum çıktısı `installer-output/`, bağımsız uygulama dosyaları `installer-payload-v0.16.10/` altında oluşur.
 
 ## Kontroller
 
 ```powershell
 dotnet run --project .\tests\PackLibrary.Tests -c Release
-dotnet run --project .\tests\ReleaseUpdates.Tests -c Release -- .\installer-payload-v0.15.12\BedrockLoader.exe
+dotnet run --project .\tests\ReleaseUpdates.Tests -c Release -- .\installer-payload-v0.16.10\BedrockLoader.exe
 ```
 
 İkinci kontrol için önce kurulum derleme betiğini çalıştır. Kontroller yükleyiciyi çalıştırmaz ve kullanıcının paketlerini değiştirmez.
@@ -55,6 +45,6 @@ Kaynak: https://github.com/kokluk/BedrockFree/releases/download/McBedrock/vcrunt
 
 Ayarlar/kayıtlar `%APPDATA%\BedrockLoader`, yerel modlar `%APPDATA%\Minecraft bedrock\mods` altında tutulur. Kaldırma, Minecraft paketlerini ve kullanıcı ayarlarını silmez.
 
-Dahili mod deposu şimdilik **Yakında** ekranıdır. Güncelleyicinin dağıtım için erişilebilir bir GitHub Release ve doğrulanabilir kurulum dosyası bulunması gerekir. Depo özel ise anonim erişimle güncelleme alınamaz.
+Güncelleyicinin dağıtım için erişilebilir bir GitHub Release ve doğrulanabilir kurulum dosyası bulunması gerekir. Depo özel ise anonim erişimle güncelleme alınamaz.
 
 MIT lisansı — Kokluk. Kaynak ağacında hazır EXE, DLL veya dağıtım ZIP'i tutulmaz; çalıştırılabilir paketler yalnızca Releases bölümünde paylaşılır.

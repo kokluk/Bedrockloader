@@ -48,7 +48,7 @@ public sealed partial class MainForm
         {
             base.OnPaint(e);
             var state = e.Graphics.Save(); ApplyContentMotion(e.Graphics);
-            float size = 20 + (float)HoverAmount;
+            float size = 23 + (float)HoverAmount;
             SoftIcons.Draw(e.Graphics, IconKey, new RectangleF(9, (Height - size) / 2, size, size), paintedIcon, IsActive);
             e.Graphics.Restore(state);
         }
