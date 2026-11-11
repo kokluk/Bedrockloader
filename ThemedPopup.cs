@@ -22,7 +22,7 @@ public sealed partial class MainForm
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40));
         header.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        var heading = new Label { Text = title, Dock = DockStyle.Fill, ForeColor = TextColor, Font = new Font("Segoe UI", 16, FontStyle.Bold) };
+        var heading = new Label { Text = title, Dock = DockStyle.Fill, ForeColor = TextColor, Font = LauncherFont.Create(16, FontStyle.Bold) };
         var close = new SymbolButton
         {
             Symbol = "close", AccessibleName = T("Close", "Kapat"), Size = new Size(36, 36),
@@ -32,7 +32,7 @@ public sealed partial class MainForm
         };
         close.Click += (_, _) => popup.DialogResult = confirmation ? DialogResult.No : DialogResult.OK;
         header.Controls.Add(heading, 0, 0); header.Controls.Add(close, 1, 0);
-        var body = new ScrollTextBox { Text = message.ReplaceLineEndings(Environment.NewLine), Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, BorderStyle = BorderStyle.None, BackColor = Surface, ForeColor = TextColor, Font = new Font("Segoe UI", 10), WordWrap = true, TabStop = false };
+        var body = new ScrollTextBox { Text = message.ReplaceLineEndings(Environment.NewLine), Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, BorderStyle = BorderStyle.None, BackColor = Surface, ForeColor = TextColor, Font = LauncherFont.Create(10), WordWrap = true, TabStop = false };
         var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = confirmation ? 2 : 1, RowCount = 1, Margin = Padding.Empty, Padding = new Padding(0, 14, 0, 6), BackColor = Surface };
         actions.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         for (int i = 0; i < actions.ColumnCount; i++) actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / actions.ColumnCount));
@@ -75,19 +75,59 @@ public sealed partial class MainForm
 
     sealed class PopupToggle(Color accent, Color surface) : CheckBox
     {
+        System.Windows.Forms.Timer? slideTimer;
+        float position;
+        internal Color AccentColor { get; set; } = accent;
+        internal Color TrackColor { get; set; } = surface;
+        internal bool PlaySoundOnClick { get; set; } = true;
+
+        protected override void OnClick(EventArgs e) { if (PlaySoundOnClick) PlayClick(this); base.OnClick(e); }
+
+        protected override void OnCheckedChanged(EventArgs e)
+        {
+            base.OnCheckedChanged(e);
+            if (!IsHandleCreated || !Visible || AnimatedRoundButton.ReducedMotion)
+            {
+                position = Checked ? 1 : 0;
+                slideTimer?.Stop();
+                Invalidate();
+                return;
+            }
+            if (slideTimer == null)
+            {
+                slideTimer = new System.Windows.Forms.Timer { Interval = 15 };
+                slideTimer.Tick += (_, _) =>
+                {
+                    float goal = Checked ? 1 : 0;
+                    position += (goal - position) * .28f;
+                    if (AnimatedRoundButton.ReducedMotion || Math.Abs(goal - position) < .025f)
+                    { position = goal; slideTimer.Stop(); }
+                    Invalidate();
+                };
+            }
+            slideTimer.Start();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) slideTimer?.Dispose();
+            base.Dispose(disposing);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.Clear(BackColor);
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            int top = (Height - 16) / 2;
-            using var track = RoundedPath(new Rectangle(2, top, 30, 16), 8);
-            using var fill = new SolidBrush(Checked ? accent : surface);
-            using var pen = new Pen(Focused ? accent : MixColors(surface, ForeColor, .35));
-            using var thumb = new SolidBrush(Checked ? ReadableText(accent) : ForeColor);
+            int top = (Height - 20) / 2;
+            using var track = RoundedPath(new Rectangle(2, top, 36, 20), 10);
+            float slide = slideTimer?.Enabled == true ? position : Checked ? 1 : 0;
+            using var fill = new SolidBrush(MixColors(TrackColor, AccentColor, slide));
+            using var pen = new Pen(Focused ? AccentColor : MixColors(TrackColor, ForeColor, .35));
+            using var thumb = new SolidBrush(MixColors(ForeColor, ReadableText(AccentColor), slide));
             e.Graphics.FillPath(fill, track);
             e.Graphics.DrawPath(pen, track);
-            e.Graphics.FillEllipse(thumb, Checked ? 19 : 5, top + 3, 10, 10);
-            TextRenderer.DrawText(e.Graphics, Text, Font, new Rectangle(41, 0, Math.Max(0, Width - 41), Height), ForeColor,
+            e.Graphics.FillEllipse(thumb, 5 + 16 * slide, top + 3, 14, 14);
+            TextRenderer.DrawText(e.Graphics, Text, Font, new Rectangle(46, 0, Math.Max(0, Width - 46), Height), ForeColor,
                 TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
         }
     }
@@ -98,11 +138,11 @@ public sealed partial class MainForm
         readonly System.Diagnostics.Stopwatch entranceClock = new();
         Point entranceDestination;
         int entranceDistance;
-        readonly Color accent;
+        public Color BorderAccent { get; set; }
 
         public RoundedPopupForm(Color accent)
         {
-            this.accent = accent;
+            BorderAccent = accent;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
             DoubleBuffered = true;
             entranceTimer.Tick += (_, _) =>
@@ -136,12 +176,13 @@ public sealed partial class MainForm
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             using var outline = RoundedPath(new Rectangle(1, 1, ClientSize.Width - 3, ClientSize.Height - 3),
                 (int)Math.Round(23 * DeviceDpi / 96d));
-            using var pen = new Pen(MixColors(BackColor, accent, .65), Math.Max(1.5f, DeviceDpi / 64f));
+            using var pen = new Pen(MixColors(BackColor, BorderAccent, .65), Math.Max(1.5f, DeviceDpi / 64f));
             e.Graphics.DrawPath(pen, outline);
         }
 
         protected override void OnShown(EventArgs e)
         {
+            if (Owner is MainForm launcher) launcher.TrackProximity(this);
             if (!AnimatedRoundButton.ReducedMotion)
             {
                 entranceDestination = Location;

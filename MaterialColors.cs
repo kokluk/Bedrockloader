@@ -22,7 +22,7 @@ public sealed partial class MainForm
         return color.IsEmpty ? MaterialColors[0].Color : color;
     }
 
-    FlowLayoutPanel BuildMaterialColorChoices()
+    FlowLayoutPanel BuildMaterialColorChoices(Action? preview = null)
     {
         var choices = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, Margin = Padding.Empty, Padding = new Padding(0, 2, 0, 6) };
         var tips = new ToolTip();
@@ -43,8 +43,12 @@ public sealed partial class MainForm
                 settings.MaterialYouColor = color.Id;
                 foreach (MaterialColorButton swatch in choices.Controls)
                     swatch.IsSelected = Equals(swatch.Tag, color.Id);
-                SaveSettings(); ApplyTheme();
-                UpdateStatus(T($"Material You color: {name}", $"Material You rengi: {name}"));
+                if (preview != null) preview();
+                else
+                {
+                    SaveSettings(); ApplyTheme();
+                    UpdateStatus(T($"Material You color: {name}", $"Material You rengi: {name}"));
+                }
             };
             choices.Controls.Add(button);
         }

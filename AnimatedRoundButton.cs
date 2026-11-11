@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 
@@ -9,6 +9,8 @@ public sealed partial class MainForm
     class AnimatedRoundButton : Button
     {
         readonly System.Windows.Forms.Timer motionTimer = new() { Interval = 15 };
+        System.Windows.Forms.Timer? mouseOutlineTimer;
+        bool pointerFocus, pointerOutline, pointerDown;
         long lastFrame;
         bool hovered, pressed;
         double hoverAmount, pressAmount, focusAmount, pulse = 1;
@@ -16,7 +18,22 @@ public sealed partial class MainForm
         Point pulseOrigin;
         Color paintedBackground;
         static readonly bool reducedMotion = ReadReducedMotion();
-        internal static bool ReducedMotion => reducedMotion;
+        internal static bool AnimationsEnabled { get; set; } = true;
+        internal static bool AdvancedAnimationsEnabled { get; set; } = true;
+        internal static bool ReducedMotion => reducedMotion || !AnimationsEnabled;
+        PointF shinePoint;
+        float shineStrength;
+
+        internal void SetProximityShine(Point point, bool active)
+        {
+            float dx = point.X - Math.Clamp(point.X, 0, Width);
+            float dy = point.Y - Math.Clamp(point.Y, 0, Height);
+            float strength = active && Visible && Enabled ? Math.Max(0, 1 - MathF.Sqrt(dx * dx + dy * dy) / 48) : 0;
+            if (strength == 0 && shineStrength == 0 || strength == shineStrength && shinePoint == point) return;
+            shineStrength = strength;
+            shinePoint = point;
+            Invalidate();
+        }
         double revealAmount = 1;
         public double RevealAmount { get => revealAmount; set { revealAmount = Math.Clamp(value, 0, 1); Invalidate(); } }
         double revealExpansion = 1;
@@ -27,6 +44,8 @@ public sealed partial class MainForm
         public int CornerRadius { get; set; } = 18;
         public Color FocusBorderColor { get; set; } = Color.Empty;
         public string? LeadingIcon { get; set; }
+        public bool MonochromeIcon { get; set; }
+        public bool Outline { get; set; }
         protected double HoverAmount => hoverAmount;
 
         [DllImport("user32.dll")]
@@ -40,6 +59,7 @@ public sealed partial class MainForm
 
         public AnimatedRoundButton()
         {
+            Cursor = Cursors.Hand;
             FlatStyle = FlatStyle.Flat; FlatAppearance.BorderSize = 0;
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             paintedBackground = BackColor;
@@ -77,22 +97,24 @@ public sealed partial class MainForm
             long now = Stopwatch.GetTimestamp();
             double dt = Math.Clamp((now - lastFrame) / (double)Stopwatch.Frequency, 0, 0.05);
             lastFrame = now;
-            double smooth = reducedMotion ? 1 : 1 - Math.Exp(-dt * 22);
+            bool instant = ReducedMotion;
+            double smooth = instant ? 1 : 1 - Math.Exp(-dt * 22);
             hoverAmount = Approach(hoverAmount, hovered && Enabled ? 1 : 0, smooth);
-            pressAmount = Approach(pressAmount, pressed && Enabled ? 1 : 0, reducedMotion ? 1 : 1 - Math.Exp(-dt * 32));
-            focusAmount = Approach(focusAmount, Focused && Enabled ? 1 : 0, smooth);
+            pressAmount = Approach(pressAmount, pressed && Enabled ? 1 : 0, instant ? 1 : 1 - Math.Exp(-dt * 32));
+            double focusTarget = Focused && Enabled && (!pointerFocus || pointerOutline) ? 1 : 0;
+            focusAmount = Approach(focusAmount, focusTarget, smooth);
             paintedBackground = Blend(paintedBackground, BackColor, smooth);
-            pulse = reducedMotion ? 1 : Math.Min(1, pulse + dt / 0.32);
+            pulse = instant ? 1 : Math.Min(1, pulse + dt / 0.28);
             // A damped spring gives a small rebound without changing layout bounds.
-            double target = pressed && Enabled && !reducedMotion ? 1 : 0;
-            if (reducedMotion) { compression = 0; compressionVelocity = 0; }
+            double target = pressed && Enabled && !instant ? 1 : 0;
+            if (instant) { compression = 0; compressionVelocity = 0; }
             else
             {
                 int steps = Math.Max(1, (int)Math.Ceiling(dt / 0.008));
                 double step = dt / steps;
                 for (int i = 0; i < steps; i++)
                 {
-                    compressionVelocity += ((target - compression) * 560 - compressionVelocity * 25) * step;
+                    compressionVelocity += ((target - compression) * 620 - compressionVelocity * 29) * step;
                     compression += compressionVelocity * step;
                 }
                 if (Math.Abs(compression - target) < 0.002 && Math.Abs(compressionVelocity) < 0.025)
@@ -101,33 +123,71 @@ public sealed partial class MainForm
             bool extra = AdvanceExtraMotion(smooth);
             Invalidate();
             if (!extra && hoverAmount == (hovered && Enabled ? 1 : 0) && pressAmount == (pressed && Enabled ? 1 : 0)
-                && focusAmount == (Focused && Enabled ? 1 : 0) && compression == target && compressionVelocity == 0
+                && focusAmount == focusTarget && compression == target && compressionVelocity == 0
                 && paintedBackground.ToArgb() == BackColor.ToArgb() && pulse == 1)
                 motionTimer.Stop();
         }
 
-        void BeginPulse(Point point) { pulseOrigin = point; pulse = 0; Animate(); }
+        protected void BeginPulse(Point point) { pulseOrigin = point; pulse = ReducedMotion ? 1 : 0; Animate(); }
+        protected override void OnClick(EventArgs e) { PlayClick(this); base.OnClick(e); }
         protected override void OnMouseEnter(EventArgs e) { hovered = true; Animate(); base.OnMouseEnter(e); }
         protected override void OnMouseLeave(EventArgs e) { hovered = false; pressed = false; Animate(); base.OnMouseLeave(e); }
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left) { pressed = true; if (!reducedMotion) compressionVelocity = Math.Min(18, compressionVelocity + 9); BeginPulse(e.Location); }
+            if (e.Button == MouseButtons.Left)
+            {
+                pointerDown = pointerFocus = pointerOutline = pressed = true;
+                mouseOutlineTimer?.Stop();
+                if (!ReducedMotion) compressionVelocity = Math.Min(18, compressionVelocity + 9);
+                BeginPulse(e.Location);
+            }
             base.OnMouseDown(e);
         }
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            if (pressed && !reducedMotion) { compression = Math.Max(compression, 0.55); compressionVelocity = Math.Min(compressionVelocity, 0); }
+            if (pressed && !ReducedMotion) { compression = Math.Max(compression, 0.55); compressionVelocity = Math.Min(compressionVelocity, 0); }
+            if (e.Button == MouseButtons.Left) ReleasePointerOutline();
             pressed = false; Animate(); base.OnMouseUp(e);
         }
-        protected override void OnMouseCaptureChanged(EventArgs e) { if (!Capture) pressed = false; Animate(); base.OnMouseCaptureChanged(e); }
+        protected override void OnMouseCaptureChanged(EventArgs e)
+        {
+            if (!Capture) { pressed = false; ReleasePointerOutline(); }
+            Animate();
+            base.OnMouseCaptureChanged(e);
+        }
+
+        void ReleasePointerOutline()
+        {
+            if (!pointerDown) return;
+            pointerDown = false;
+            if (mouseOutlineTimer == null)
+            {
+                mouseOutlineTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+                mouseOutlineTimer.Tick += (_, _) =>
+                {
+                    mouseOutlineTimer.Stop();
+                    pointerOutline = false;
+                    Animate();
+                };
+            }
+            mouseOutlineTimer.Start();
+        }
         protected override void OnKeyDown(KeyEventArgs e)
         {
+            pointerFocus = false;
+            Animate();
             if (e.KeyCode == Keys.Space && !pressed) { pressed = true; BeginPulse(new Point(Width / 2, Height / 2)); }
             base.OnKeyDown(e);
         }
         protected override void OnKeyUp(KeyEventArgs e) { if (e.KeyCode == Keys.Space) pressed = false; Animate(); base.OnKeyUp(e); }
         protected override void OnGotFocus(EventArgs e) { Animate(); base.OnGotFocus(e); }
-        protected override void OnLostFocus(EventArgs e) { pressed = false; Animate(); base.OnLostFocus(e); }
+        protected override void OnLostFocus(EventArgs e)
+        {
+            pointerDown = pointerFocus = pointerOutline = pressed = false;
+            mouseOutlineTimer?.Stop();
+            Animate();
+            base.OnLostFocus(e);
+        }
         protected override void OnEnabledChanged(EventArgs e) { if (!Enabled) { pressed = false; hovered = false; } Animate(); base.OnEnabledChanged(e); }
         protected override void OnBackColorChanged(EventArgs e)
         {
@@ -136,7 +196,11 @@ public sealed partial class MainForm
             else Animate();
         }
         protected override void OnParentChanged(EventArgs e) { base.OnParentChanged(e); if (Parent == null) motionTimer?.Stop(); }
-        protected override void Dispose(bool disposing) { if (disposing) motionTimer.Dispose(); base.Dispose(disposing); }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) { motionTimer.Dispose(); mouseOutlineTimer?.Dispose(); }
+            base.Dispose(disposing);
+        }
 
         protected void ApplyContentMotion(Graphics graphics)
         {
@@ -144,6 +208,18 @@ public sealed partial class MainForm
             graphics.TranslateTransform(Width / 2f, Height / 2f + amount * 1.3f);
             graphics.ScaleTransform(1 - amount * 0.035f, 1 - amount * 0.075f);
             graphics.TranslateTransform(-Width / 2f, -Height / 2f);
+        }
+
+        protected void ApplyIconMotion(Graphics graphics, RectangleF bounds)
+        {
+            if (ReducedMotion || !AdvancedAnimationsEnabled) return;
+            float x = bounds.X + bounds.Width / 2, y = bounds.Y + bounds.Height / 2;
+            float bounce = pulse < 1 ? (float)(Math.Sin(pulse * Math.PI * 2) * (1 - pulse)) : 0;
+            graphics.TranslateTransform(x, y - (float)hoverAmount * 1.2f);
+            graphics.RotateTransform(bounce * 15);
+            float scale = 1 + (float)hoverAmount * .07f + bounce * .13f;
+            graphics.ScaleTransform(scale, scale);
+            graphics.TranslateTransform(-x, -y);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -159,22 +235,39 @@ public sealed partial class MainForm
                 Math.Max(1, shapeWidth), Math.Max(1, shapeHeight),
                 Math.Max(4, CornerRadius - amount * 6));
             var color = Blend(paintedBackground, ControlPaint.Light(paintedBackground, 0.14f), hoverAmount);
-            color = Blend(color, ControlPaint.Dark(paintedBackground, 0.16f), pressAmount);
+            color = Blend(color, Blend(paintedBackground, ForeColor, .12), pressAmount);
             color = Blend(Parent?.BackColor ?? BackColor, color, revealAmount);
             using (var brush = new SolidBrush(color)) g.FillPath(brush, path);
+            if (shineStrength > 0)
+            {
+                const float radius = 105;
+                using var glow = new GraphicsPath();
+                glow.AddEllipse(shinePoint.X - radius, shinePoint.Y - radius, radius * 2, radius * 2);
+                using var highlight = new PathGradientBrush(glow)
+                {
+                    CenterColor = Color.FromArgb((int)(48 * shineStrength * (1 - .8 * pressAmount)), Color.White),
+                    SurroundColors = [Color.FromArgb(0, Color.White)]
+                };
+                var clip = g.Save();
+                g.SetClip(glow);
+                g.FillPath(highlight, path);
+                g.Restore(clip);
+            }
             if (pulse < 1 && Enabled)
             {
                 var state = g.Save(); g.SetClip(path);
                 float radius = (float)(Math.Sqrt(Width * (double)Width + Height * (double)Height) * (1 - Math.Pow(1 - pulse, 3)));
-                using var pulseBrush = new SolidBrush(Color.FromArgb((int)(32 * (1 - pulse)), ForeColor));
+                using var pulseBrush = new SolidBrush(Color.FromArgb((int)(24 * Math.Pow(1 - pulse, 1.5)), ForeColor));
                 g.FillEllipse(pulseBrush, pulseOrigin.X - radius, pulseOrigin.Y - radius, radius * 2, radius * 2); g.Restore(state);
             }
-            if (focusAmount > 0)
+            if (Outline || focusAmount > 0)
             {
-                using var pen = new Pen(Color.FromArgb((int)(200 * focusAmount), FocusBorderColor.IsEmpty ? ForeColor : FocusBorderColor), 1.2f);
+                int opacity = Math.Max(Outline ? 100 : 0, (int)(200 * focusAmount));
+                using var pen = new Pen(Color.FromArgb(opacity, FocusBorderColor.IsEmpty ? ForeColor : FocusBorderColor), 1.2f);
                 g.DrawPath(pen, path);
             }
             var textRect = ClientRectangle;
+            if (this is SymbolButton && Text.Length > 0) textRect.Width = Math.Max(0, Width - 34);
             if (this is SoftSelector) { textRect.X += 14; textRect.Width -= 52; }
             if (this is NavIconButton) { textRect.X += 42; textRect.Width -= 46; }
             else if (LeadingIcon != null)
@@ -183,7 +276,11 @@ public sealed partial class MainForm
                 int textWidth = TextRenderer.MeasureText(Text, Font, Size.Empty, TextFormatFlags.SingleLine | TextFormatFlags.NoPadding).Width;
                 int x = Math.Max(10, (Width - textWidth - size - 8) / 2);
                 var iconState = g.Save(); ApplyContentMotion(g);
-                SoftIcons.Draw(g, LeadingIcon, new RectangleF(x, (Height - size) / 2f, size, size), ForeColor, true);
+                var iconColor = MonochromeIcon && FindForm() is MainForm owner
+                    ? owner.lightMode ? Color.Black : Color.White : ForeColor;
+                var bounds = new RectangleF(x, (Height - size) / 2f, size, size);
+                ApplyIconMotion(g, bounds);
+                SoftIcons.Draw(g, LeadingIcon, bounds, iconColor, !MonochromeIcon);
                 g.Restore(iconState);
                 textRect.X = x + size + 8; textRect.Width = Math.Max(0, Width - textRect.X - 10);
             }

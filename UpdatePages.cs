@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace KoklukBedrockModloader;
 
@@ -23,7 +23,7 @@ public sealed partial class MainForm
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 104));
         var version = WrappedText(T($"Installed version: {DisplayVersion}", $"Kurulu sürüm: {DisplayVersion}"), 12, true); version.Dock = DockStyle.Fill;
         updateMessage = WrappedText(T(updateMessageEn, updateMessageTr)); updateMessage.Dock = DockStyle.Fill;
-        releaseNotes = new ScrollTextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10) };
+        releaseNotes = new ScrollTextBox { Dock = DockStyle.Fill, Font = LauncherFont.Create(10) };
         var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, Tag = "card", Padding = new Padding(0, 10, 0, 0), Margin = Padding.Empty };
         checkUpdateButton = MakeButton(T("Check for updates", "Güncellemeleri denetle"), CheckUpdates, 185);
         checkUpdateButton.Tag = "card-button";
@@ -90,7 +90,7 @@ public sealed partial class MainForm
             else UpdateFeedback($"Version {availableRelease.Tag} is available ({availableRelease.Size / 1048576d:F1} MB). Installation requires your approval.", $"{availableRelease.Tag} sürümü hazır ({availableRelease.Size / 1048576d:F1} MB). Kurulum senin onayınla başlayacak.");
         }
         catch (OperationCanceledException) { if (!IsDisposed) UpdateFeedback("The check was canceled or timed out. You can try again.", "Kontrol iptal edildi veya zaman aşımına uğradı. Tekrar deneyebilirsin."); }
-        catch (Exception ex) { LogAction($"Update check failed: {ex.Message}"); UpdateFeedback("Updates could not be checked. Check your connection and try again.", "Güncellemeler kontrol edilemedi. Bağlantını kontrol edip tekrar dene."); }
+        catch (Exception ex) { LogAction($"Update check failed: {ex.Message}", $"Güncelleme denetimi başarısız: {ex.Message}"); UpdateFeedback("Updates could not be checked. Check your connection and try again.", "Güncellemeler kontrol edilemedi. Bağlantını kontrol edip tekrar dene."); }
         finally { updatesBusy = false; RenderUpdateState(); }
     }
 
@@ -120,10 +120,10 @@ public sealed partial class MainForm
             start.ArgumentList.Add("/SP-"); start.ArgumentList.Add(english ? "/LANG=english" : "/LANG=turkish");
             if (File.Exists(Path.Combine(AppContext.BaseDirectory, "unins000.exe"))) start.ArgumentList.Add("/DIR=" + AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
             if (Process.Start(start) == null) throw new IOException("Setup did not start / Kurulum başlatılamadı.");
-            LogAction($"Started verified update installer: {release.Tag}"); Close();
+            LogAction($"Started verified update installer: {release.Tag}", $"Doğrulanmış güncelleme yükleyicisi başlatıldı: {release.Tag}"); CloseToDesktop();
         }
         catch (OperationCanceledException) { if (!IsDisposed) UpdateFeedback("The download was canceled or timed out.", "İndirme iptal edildi veya zaman aşımına uğradı."); }
-        catch (Exception ex) { LogAction($"Update installation failed: {ex.Message}"); if (!IsDisposed) { UpdateFeedback("The update could not be installed. You can try again.", "Güncelleme kurulamadı. Tekrar deneyebilirsin."); ShowError(ex, T("Update failed", "Güncelleme başarısız")); } }
+        catch (Exception ex) { LogAction($"Update installation failed: {ex.Message}", $"Güncelleme kurulamadı: {ex.Message}"); if (!IsDisposed) { UpdateFeedback("The update could not be installed. You can try again.", "Güncelleme kurulamadı. Tekrar deneyebilirsin."); ShowError(ex, T("Update failed", "Güncelleme başarısız")); } }
         finally
         {
             if (staged != null) { try { File.Delete(staged); } catch { } }
@@ -134,6 +134,7 @@ public sealed partial class MainForm
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         presenceLifetime.Cancel();
+        DisposeTray();
         updatesLifetime.Cancel(); updatesLifetime.Dispose(); base.OnFormClosed(e);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Reflection.PortableExecutable;
 
@@ -88,7 +88,7 @@ public sealed partial class MainForm
                 settings.ContentPath = folder;
                 SaveSettings();
             }
-            LogAction($"Installed modloader from {ModloaderDownloadUrl} to {target}");
+            LogAction($"Installed modloader from {ModloaderDownloadUrl} to {target}", $"Modloader kuruldu: {ModloaderDownloadUrl} → {target}");
             UpdateStatus(T("Modloader installed.", "Modloader kuruldu."));
             ShowThemedPopup(T("Installation complete", "Kurulum tamamlandı"), T($"Modloader installed successfully.\n\n{target}", $"Modloader başarıyla kuruldu.\n\n{target}"));
         }
@@ -100,7 +100,7 @@ public sealed partial class MainForm
         }
         catch (Exception ex)
         {
-            LogAction($"Modloader installation failed: {ex.Message}");
+            LogAction($"Modloader installation failed: {ex.Message}", $"Modloader kurulamadı: {ex.Message}");
             UpdateStatus(T("Modloader installation failed.", "Modloader kurulamadı."));
             ShowThemedPopup(T("Modloader installation failed", "Modloader kurulamadı"), ex.Message);
         }
@@ -109,7 +109,7 @@ public sealed partial class MainForm
             if (stagedFile != null)
             {
                 try { File.Delete(stagedFile); }
-                catch (Exception ex) { LogAction($"Could not remove incomplete modloader download: {ex.Message}"); }
+                catch (Exception ex) { LogAction($"Could not remove incomplete modloader download: {ex.Message}", $"Yarım kalan modloader indirmesi silinemedi: {ex.Message}"); }
             }
             installingModloader = false;
             if (installModloaderButton is { IsDisposed: false }) installModloaderButton.Enabled = true;

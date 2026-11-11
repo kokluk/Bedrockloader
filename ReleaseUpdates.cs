@@ -12,7 +12,7 @@ internal sealed record UpdateRelease(Version Version, string Tag, string Notes, 
 
 internal static class ReleaseUpdates
 {
-    public static readonly Version CurrentVersion = new(0, 16, 10, 0);
+    public static readonly Version CurrentVersion = new(0, 17, 3, 0);
     public static bool ShouldNotify(UpdateRelease? release) => release != null && release.Version > CurrentVersion;
     public const string ReleasesPage = "https://github.com/kokluk/Bedrockloader/releases";
     public const string LatestApi = "https://api.github.com/repos/kokluk/Bedrockloader/releases/latest";

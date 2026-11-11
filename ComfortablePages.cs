@@ -4,30 +4,57 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm
 {
+    string? lastHomeGreeting;
+
+    string HomeGreeting(DateTime localTime)
+    {
+        var choices = new List<string>
+        {
+            T("Welcome", "Hoş geldin"),
+            T("Hello", "Merhaba"),
+            localTime.Hour switch
+            {
+                >= 5 and < 12 => T("Good morning", "Günaydın"),
+                >= 12 and < 15 => T("Good afternoon", "İyi öğlenler"),
+                >= 15 and < 18 => T("Have a nice afternoon", "İyi günler"),
+                >= 18 and < 23 => T("Good evening", "İyi akşamlar"),
+                _ => T("Good night", "İyi geceler")
+            }
+        };
+        if (lastHomeGreeting != null) choices.Add(T("Hello again", "Tekrar merhaba"));
+        if (localTime.DayOfWeek == DayOfWeek.Saturday) choices.Add(T("Have a great Saturday", "Harika bir cumartesi olsun"));
+        if (localTime.DayOfWeek == DayOfWeek.Sunday) choices.Add(T("Have a great Sunday", "Harika bir pazar olsun"));
+        choices.RemoveAll(choice => choice == lastHomeGreeting);
+        lastHomeGreeting = choices[Random.Shared.Next(choices.Count)];
+        string name = NormalizeLocalName(settings.LocalName);
+        return name.Length == 0 ? lastHomeGreeting : $"{lastHomeGreeting}, {name}";
+    }
+
     Label WrappedText(string text, float size = 10, bool bold = false) => new()
     {
         Text = text, AutoSize = false, Dock = DockStyle.Top,
-        Font = new Font("Segoe UI", size, bold ? FontStyle.Bold : FontStyle.Regular),
+        Font = LauncherFont.Create(size, bold ? FontStyle.Bold : FontStyle.Regular),
         ForeColor = TextColor, BackColor = Color.Transparent
     };
 
     void BuildComfortableHome()
     {
-        AddPageHeading(T("Welcome", "Hoş geldin"), T("Your Minecraft Bedrock hub", "Minecraft Bedrock merkeziniz"));
+        AddPageHeading(HomeGreeting(DateTime.Now),
+            T("Your Minecraft Bedrock hub", "Minecraft Bedrock merkeziniz"));
         var page = new Panel { Dock = DockStyle.Fill, AutoScroll = false, Tag = "page" };
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Height = 350, ColumnCount = 1, RowCount = 4, Tag = "page", Margin = Padding.Empty };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Height = 350, ColumnCount = 1, RowCount = 3, Tag = "page", Margin = Padding.Empty };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 90));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 110));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         var hero = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 22, Padding = new Padding(18), Margin = new Padding(0, 0, 0, 14) };
         bool installed = MinecraftInstallation.IsInstalled(settings.ContentPath);
         var launch = MakeButton(cinnabarMode ? CinnabarLaunchText() : installed ? T("Launch Minecraft", "Minecraft'ı başlat") : T("Install Minecraft", "Minecraft'ı yükle"), () => { if (cinnabarMode) _ = LaunchCinnabarAsync(); else LaunchGame(); }, icon: "play");
         launch.Tag = "minecraft-launch";
+        cinnabarLaunchButton = launch;
         minecraftLaunchButton = cinnabarMode ? null : launch;
-        launch.Dock = DockStyle.Fill; launch.Font = new Font("Segoe UI", 13, FontStyle.Bold); hero.Controls.Add(launch);
-        var toggle = new SymbolButton { Symbol = "game-switch", Dock = DockStyle.Right, Width = 44, AccessibleName = T("Switch game", "Oyunu değiştir") };
+        launch.Dock = DockStyle.Fill; launch.Font = LauncherFont.Create(13, FontStyle.Bold); hero.Controls.Add(launch);
+        var toggle = new SymbolButton { Symbol = "game-switch", Text = "Cinnabar", Dock = DockStyle.Right, Width = 112, AccessibleName = T("Switch Minecraft / Cinnabar", "Minecraft / Cinnabar arasında geçiş") };
 
         hero.Controls.Add(toggle);
         layout.Controls.Add(hero, 0, 0);
@@ -37,71 +64,142 @@ public sealed partial class MainForm
         int resources = CountFolders(Path.Combine(comMojangRoot, "resource_packs"));
         var counts = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Tag = "page", Margin = Padding.Empty };
         for (int i = 0; i < 3; i++) counts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 3));
-        void Counter(int column, int value, string title)
+        void Counter(TableLayoutPanel target, int column, int value, string title, string symbol, Action? activate)
         {
-            var card = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 20, Padding = new Padding(14), Margin = new Padding(column == 0 ? 0 : 6, 0, column == 2 ? 0 : 6, 12) };
-            var name = WrappedText(title, 9); name.Height = 28; name.Dock = DockStyle.Bottom;
-            var number = WrappedText(value.ToString(), 26, true); number.Dock = DockStyle.Fill;
-            card.Controls.Add(number); card.Controls.Add(name); counts.Controls.Add(card, column, 0);
+            var card = new HomeCounterButton(this, value, title, symbol, activate)
+            {
+                Dock = DockStyle.Fill, CornerRadius = 20,
+                Margin = new Padding(column == 0 ? 0 : 6, 0, column == 2 ? 0 : 6, 12)
+            };
+            target.Controls.Add(card, column, 0);
         }
-        Counter(0, mods, T("Mods", "Modlar")); Counter(1, resources, T("Resource packs", "Kaynak paketleri")); Counter(2, behaviors, T("Behavior packs", "Davranış paketleri"));
+        Counter(counts, 0, mods, T("Mods", "Modlar"), "Mods", () => ShowPage("Mods"));
+        Counter(counts, 1, resources, T("Resource packs", "Kaynak paketleri"), "Addons", () => ShowPage("Addons"));
+        Counter(counts, 2, behaviors, T("Behavior packs", "Davranış paketleri"), "settings", () => ShowPage("Addons"));
         var countHost = new Panel { Dock = DockStyle.Fill, Tag = "page", Margin = Padding.Empty };
         countHost.Controls.Add(counts);
         var cinnabarCounts = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Tag = "page", Margin = Padding.Empty };
         string cinnabarRoot = CinnabarDataRoot();
-        foreach (var (folder, label) in new[]
+        int column = 0;
+        foreach (var (folder, label, symbol) in new[]
         {
-            ("mods", T("Mods", "Modlar")), ("resource-packs/global", T("Resource packs", "Kaynak paketleri")),
-            ("shaderpacks", T("Shaders", "Shaderlar"))
+            ("mods", T("Mods", "Modlar"), "Mods"), ("resource-packs/global", T("Resource packs", "Kaynak paketleri"), "Addons"),
+            ("shaderpacks", T("Shaders", "Shaderlar"), "sun")
         })
         {
             cinnabarCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 3));
             string path = Path.Combine(cinnabarRoot, folder);
-            int count = folder == "shaderpacks" ? ListCinnabarShaders(path).Count() :
-                Directory.Exists(path) ? Directory.EnumerateFileSystemEntries(path).Count() : 0;
-            var card = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 20, Padding = new Padding(14), Margin = new Padding(0, 0, 8, 12) };
-            var title = WrappedText(label, 9); title.Height = 28; title.Dock = DockStyle.Bottom;
-            var number = WrappedText(count.ToString(), 26, true); number.Dock = DockStyle.Fill;
-            card.Controls.Add(number); card.Controls.Add(title);
-            cinnabarCounts.Controls.Add(card);
+            int count = folder switch
+            {
+                "shaderpacks" => ListCinnabarShaders(path).Count(),
+                "resource-packs/global" => CountCinnabarResourcePacks(path),
+                _ => Directory.Exists(path) ? Directory.EnumerateFileSystemEntries(path).Count() : 0
+            };
+            Action? activate = folder == "shaderpacks" ? () => ShowPage("Mods") :
+                Directory.Exists(path) ? () => OpenPath(path) : null;
+            Counter(cinnabarCounts, column++, count, label, symbol, activate);
         }
         countHost.Controls.Add(cinnabarCounts);
-        layout.Controls.Add(countHost, 0, 2);
+        layout.Controls.Add(countHost, 0, 1);
         var shortcuts = new FlowLayoutPanel { Dock = DockStyle.Fill, Tag = "page", WrapContents = true, Margin = Padding.Empty, Padding = new Padding(0, 8, 0, 0) };
-        shortcuts.Controls.Add(MakeButton(T("View mods", "Modları gör"), () => ShowPage("Mods"), 155));
-        shortcuts.Controls.Add(MakeButton(T("View packs", "Packleri gör"), () => ShowPage("Addons"), 155));
-        installModloaderButton = MakeButton(T("Install modloader", "Modloader'ı kur"), InstallModloader, 155);
-        installModloaderButton.Enabled = !installingModloader;
-        shortcuts.Controls.Add(installModloaderButton);
-        var minecraftShortcuts = shortcuts.Controls.Cast<Control>().ToArray();
-        var compare = MakeButton("", () => { if (cinnabarMode) ExplainCinnabar(); else CompareGames(); }, 155);
+        var installModloader = MakeButton(T("Install modloader", "Modloader'ı kur"), InstallModloader, 176, "download");
+        installModloaderButton = installModloader;
+        installModloader.Enabled = !installingModloader;
+        shortcuts.Controls.Add(installModloader);
+        var compare = MakeButton(T("Version differences", "Sürüm farkları"), CompareGames, 176, "About");
+        var explain = MakeButton(T("What is Cinnabar?", "Cinnabar nedir?"), ExplainCinnabar, 176, "About");
+        shortcuts.Controls.Add(explain);
         shortcuts.Controls.Add(compare);
-        var cinnabarUpdates = MakeButton(T("Check for updates", "Güncellemeleri denetle"), () => _ = CheckCinnabarUpdateAsync(), 185, icon: "Updates");
-        shortcuts.Controls.Add(cinnabarUpdates);
-        layout.Controls.Add(shortcuts, 0, 3);
-        var progress = new ProgressBar { Dock = DockStyle.Fill, Margin = new Padding(18, 0, 18, 6), Maximum = 100 };
-        layout.Controls.Add(progress, 0, 1);
-        cinnabarProgress = progress;
-        cinnabarProgressRow = layout.RowStyles[1];
+        var cinnabarUpdates = MakeButton(T("Check for updates", "Güncellemeleri denetle"), () => _ = CheckCinnabarUpdateAsync(), 215, icon: "update");
+        cinnabarUpdates.Height = 32;
+        if (pageHeadingPanel is { } heading)
+        {
+            heading.Controls.Add(cinnabarUpdates);
+            void PlaceUpdateButton() => cinnabarUpdates.Location = new Point(Math.Max(0, heading.ClientSize.Width - cinnabarUpdates.Width), 3);
+            heading.Resize += (_, _) => PlaceUpdateButton();
+            PlaceUpdateButton();
+        }
+        var play = MakeButton(T("Launch installed version", "Kurulu sürümü başlat"), () => _ = LaunchCinnabarAsync(playOnly: true), 206, "play");
+        foreach (var shortcut in new[] { installModloader, compare, explain, cinnabarUpdates, play }) shortcut.MonochromeIcon = true;
+        cinnabarPlayButton = play;
+        shortcuts.Controls.Add(play);
+        layout.Controls.Add(shortcuts, 0, 2);
         page.Controls.Add(layout);
         contentHost.Controls.Add(page);
-        toggle.Click += (_, _) => { cinnabarMode = !cinnabarMode; UpdateHomeMode(); };
+        toggle.Click += (_, _) => { toggle.Spin(); cinnabarMode = !cinnabarMode; UpdateHomeMode(); };
         UpdateHomeMode();
 
         void UpdateHomeMode()
         {
+            toggle.Text = cinnabarMode ? "Minecraft" : "Cinnabar";
             layout.SuspendLayout();
-            launch.Text = cinnabarMode ? CinnabarLaunchText() : installed ? T("Launch Minecraft", "Minecraft'ı başlat") : T("Install Minecraft", "Minecraft'ı yükle");
+            if (cinnabarMode) RefreshCinnabarButton();
+            else
+            {
+                play.Visible = false;
+                RefreshMinecraftButton(launch);
+            }
             minecraftLaunchButton = cinnabarMode ? null : launch;
-            compare.Text = cinnabarMode ? T("What is Cinnabar?", "Cinnabar nedir?") : T("Version differences", "Sürüm farkları");
             cinnabarUpdates.Visible = cinnabarMode;
             counts.Visible = !cinnabarMode;
             cinnabarCounts.Visible = cinnabarMode;
-            foreach (var shortcut in minecraftShortcuts) shortcut.Visible = !cinnabarMode;
-            ShowCinnabarProgress(cinnabarBusy ? cinnabarPercent : -1);
+            installModloader.Visible = !cinnabarMode;
+            explain.Visible = cinnabarMode;
             layout.ResumeLayout(true);
             UpdateModeNavigation("Home");
+            if (cinnabarMode) _ = CheckCinnabarUpdateAsync(interactive: false);
         }
+    }
+
+    void TrackProximity(Control shell)
+    {
+        var tracker = new System.Windows.Forms.Timer { Interval = 33 };
+        var glowing = new HashSet<AnimatedRoundButton>();
+        (Point Cursor, Rectangle Bounds, string Page, bool Cinnabar, bool Active)? previous = null;
+        void FindNearby(Control parent, Point cursor, HashSet<AnimatedRoundButton> result)
+        {
+            foreach (Control child in parent.Controls)
+            {
+                if (!child.Visible || !child.IsHandleCreated) continue;
+                var region = child.RectangleToScreen(child.ClientRectangle);
+                region.Inflate(48, 48);
+                if (!region.Contains(cursor)) continue;
+                if (child is AnimatedRoundButton button)
+                {
+                    result.Add(button);
+                    button.SetProximityShine(button.PointToClient(cursor), true);
+                }
+                else if (child.HasChildren) FindNearby(child, cursor, result);
+            }
+        }
+        tracker.Tick += (_, _) =>
+        {
+            var cursor = Cursor.Position;
+            var window = shell.FindForm();
+            bool active = settings.ShinyHomeIcons && window is { ContainsFocus: true } && window.WindowState != FormWindowState.Minimized;
+            var state = (cursor, window?.Bounds ?? Bounds, currentPage, cinnabarMode, active);
+            if (previous == state) return;
+            previous = state;
+            var nearby = new HashSet<AnimatedRoundButton>();
+            if (active) FindNearby(shell, cursor, nearby);
+            foreach (var button in glowing)
+                if (!button.IsDisposed && !nearby.Contains(button)) button.SetProximityShine(Point.Empty, false);
+            glowing = nearby;
+        };
+        shell.VisibleChanged += (_, _) =>
+        {
+            previous = null;
+            tracker.Enabled = shell.Visible;
+            if (!shell.Visible)
+            {
+                foreach (var button in glowing)
+                    if (!button.IsDisposed) button.SetProximityShine(Point.Empty, false);
+                glowing.Clear();
+            }
+        };
+        shell.ParentChanged += (_, _) => tracker.Enabled = shell.Parent != null && shell.Visible;
+        shell.Disposed += (_, _) => tracker.Dispose();
+        tracker.Enabled = shell.Visible;
     }
 
     void BuildSoftAddons()
@@ -112,7 +210,7 @@ public sealed partial class MainForm
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 158)); layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
         ConfigureDropPanel(true); dropPanel.BorderStyle = BorderStyle.None;
         dropPanel.Dock = DockStyle.Fill; dropPanel.Margin = new Padding(0, 0, 0, 16); dropPanel.Padding = new Padding(18);
-        dropTitle.Dock = DockStyle.Top; dropTitle.AutoSize = false; dropTitle.Height = 30; dropTitle.Font = new Font("Segoe UI", 11, FontStyle.Bold);
+        dropTitle.Dock = DockStyle.Top; dropTitle.AutoSize = false; dropTitle.Height = 30; dropTitle.Font = LauncherFont.Create(11, FontStyle.Bold);
         dropSubtitle.Dock = DockStyle.Top; dropSubtitle.AutoSize = false; dropSubtitle.Height = 32;
         dropSubtitle.Text = T("Drop a .mcpack, .mcaddon or .zip package here.", ".mcpack, .mcaddon veya .zip paketini buraya bırak.");
         dropPanel.Controls.Clear();
@@ -139,7 +237,7 @@ public sealed partial class MainForm
             var heading = WrappedText(headingText, 11, true); heading.Dock = DockStyle.Fill;
             count = WrappedText("0", 9); count.Dock = DockStyle.Right; count.Width = 30; count.TextAlign = ContentAlignment.TopRight;
             header.Controls.Add(heading); header.Controls.Add(count);
-            list.Dock = DockStyle.Fill; list.CheckOnClick = true; list.IntegralHeight = false; list.BorderStyle = BorderStyle.None; list.Font = new Font("Segoe UI", 9.5f);
+            list.Dock = DockStyle.Fill; list.CheckOnClick = true; list.IntegralHeight = false; list.BorderStyle = BorderStyle.None; list.Font = LauncherFont.Create(9.5f);
             list.ItemCheck -= AddonList_ItemCheck; list.ItemCheck += AddonList_ItemCheck;
             empty = WrappedText(emptyText, 10); empty.Dock = DockStyle.Fill;
             card.Controls.Add(list); card.Controls.Add(empty); card.Controls.Add(header);
@@ -164,7 +262,7 @@ public sealed partial class MainForm
     void AddCurseForgeHeadingButton(string page)
     {
         var curseForge = MakeButton("CurseForge", () => ShowPage(page), 166, "external");
-        curseForge.Height = 32; curseForge.Font = new Font("Segoe UI", 9);
+        curseForge.Height = 32; curseForge.Font = LauncherFont.Create(9);
         if (pageHeadingPanel is { } heading)
         {
             heading.Controls.Add(curseForge);
@@ -190,7 +288,7 @@ public sealed partial class MainForm
         var description = WrappedText(T("Manage your Minecraft Bedrock library in one place. Add local mods, install add-on packs and review your activity.", "Minecraft Bedrock kütüphaneni tek yerden yönet. Yerel modlarını ekle, eklenti paketlerini yükle ve işlem kayıtlarını incele."), 11);
         description.Dock = DockStyle.Fill; description.TextAlign = ContentAlignment.TopCenter; description.Padding = new Padding(12, 6, 12, 0);
         var version = WrappedText(T($"Version {DisplayVersion} • Windows", $"Sürüm {DisplayVersion} • Windows"), 9); version.Dock = DockStyle.Fill; version.TextAlign = ContentAlignment.MiddleCenter;
-        var github = MakeButton("GitHub", () => { OpenUrl("https://github.com/kokluk"); LogAction("Opened GitHub profile: kokluk"); }, 220, "github");
+        var github = MakeButton("GitHub", () => { OpenUrl("https://github.com/kokluk"); LogAction("Opened GitHub profile: kokluk", "GitHub profili açıldı: kokluk"); }, 220, "github");
         github.Tag = "primary"; github.Anchor = AnchorStyles.None; github.Margin = Padding.Empty;
         layout.Controls.Add(logo, 0, 0); layout.Controls.Add(title, 0, 1); layout.Controls.Add(description, 0, 2); layout.Controls.Add(version, 0, 3); layout.Controls.Add(github, 0, 5);
         void FitAbout()

@@ -25,11 +25,8 @@ public sealed partial class MainForm
         CancellationTokenSource? refresh = null;
         page.Disposed += (_, _) => { lifetime.Cancel(); lifetime.Dispose(); };
         bool minecraft = false;
-        var localTab = MakeButton(T("My servers", "Sunucularım"), () => { }, 123);
         var minecraftTab = MakeButton(T("Minecraft servers", "Minecraft sunucuları"), () => { }, 165);
-        localTab.Click += (_, _) => SelectSource(false);
-        minecraftTab.Click += (_, _) => SelectSource(true);
-        toolbar.Controls.Add(localTab);
+        minecraftTab.Click += (_, _) => SelectSource(!minecraft);
         if (!cinnabarMode) toolbar.Controls.Add(minecraftTab);
         else page.Disposed += (_, _) => minecraftTab.Dispose();
         toolbar.Controls.Add(MakeButton(T("Add server", "Sunucu ekle"), () => EditLocal(null), 128));
@@ -40,9 +37,8 @@ public sealed partial class MainForm
         void SelectSource(bool value)
         {
             minecraft = value;
-            localTab.Tag = value ? null : "primary";
             minecraftTab.Tag = value ? "primary" : null;
-            ApplyButtonPalette(localTab);
+            minecraftTab.Text = value ? T("Back to saved servers", "Kayıtlı sunuculara dön") : T("Minecraft servers", "Minecraft sunucuları");
             ApplyButtonPalette(minecraftTab);
             _ = RefreshAsync();
         }
@@ -108,8 +104,8 @@ public sealed partial class MainForm
 
             void AddCard(SavedServer server, Action edit, bool canAdd, bool canEdit)
             {
-                var card = new RoundedPanel { Height = 66, CornerRadius = 18, Padding = new Padding(14, 12, 8, 9), Tag = "card" };
-                var actions = new FlowLayoutPanel { Dock = DockStyle.Right, Width = canAdd ? 262 : 101, FlowDirection = FlowDirection.RightToLeft,
+                var card = new RoundedPanel { Height = 66, CornerRadius = 18, Padding = new Padding(14, 10, 8, 10), Tag = "card" };
+                var actions = new FlowLayoutPanel { Dock = DockStyle.Right, Width = canAdd ? 302 : 101, FlowDirection = FlowDirection.RightToLeft,
                     WrapContents = false, Tag = "card" };
                 var editButton = MakeButton(T("Edit", "Düzenle"), edit, 92);
                 editButton.Tag = "card-button";
@@ -117,6 +113,17 @@ public sealed partial class MainForm
                 actions.Controls.Add(editButton);
                 if (canAdd)
                 {
+                    var remove = new SymbolButton { Symbol = "trash", Width = 34, Height = editButton.Height,
+                        Margin = new Padding(3, 5, 3, 5), AccessibleName = T("Delete server", "Sunucuyu sil") };
+                    remove.Click += (_, _) =>
+                    {
+                        if (ShowThemedPopup(T("Delete server", "Sunucuyu sil"), server.Name, true, T("Delete", "Sil")) != DialogResult.Yes) return;
+                        settings.Servers.RemoveAll(item => item.Id == server.Id);
+                        SaveSettings();
+                        _ = RefreshAsync();
+                    };
+                    actions.Controls.Add(remove);
+                    actions.Controls.SetChildIndex(remove, 0);
                     var action = cinnabarMode
                         ? MakeButton(T("Copy address", "Adresi kopyala"), () => CopyCinnabarAddress(server), 148)
                         : MakeButton(T("Add to Minecraft", "Minecraft’a ekle"), () => AddServerToMinecraft(server), 148);

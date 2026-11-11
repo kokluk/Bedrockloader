@@ -8,7 +8,7 @@
     <SatelliteResourceLanguages>tr;en</SatelliteResourceLanguages>
     <AssemblyName>BedrockLoader</AssemblyName>
     <RootNamespace>BedrockLoader</RootNamespace>
-    <Version>0.16.10</Version>
+    <Version>0.17.3</Version>
     <ApplicationIcon>Assets\BedrockLoader.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>

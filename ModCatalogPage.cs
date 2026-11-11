@@ -79,7 +79,7 @@ public sealed partial class MainForm
                 actions.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
                 var install = MakeButton(T("Download & install", "İndir ve kur"), () => InstallCatalogMod(mod, UpdateInstallButtons), icon: "download");
                 install.Tag = "primary"; install.Dock = DockStyle.Fill; install.Margin = new Padding(0, 0, actionCount == 1 ? 0 : 3, 0); install.Enabled = !installingCatalogMod;
-                install.Font = new Font("Segoe UI", 9);
+                install.Font = LauncherFont.Create(9);
                 actions.Controls.Add(install, 0, 0);
                 installButtons.Add(install);
                 int actionColumn = 1;
@@ -87,14 +87,14 @@ public sealed partial class MainForm
                 {
                     var source = MakeButton("GitHub", () => OpenUrl(github.AbsoluteUri), icon: "github");
                     source.Tag = "card-button";
-                    source.Dock = DockStyle.Fill; source.Margin = new Padding(3, 0, actionColumn == actionCount - 1 ? 0 : 3, 0); source.Font = new Font("Segoe UI", 9);
+                    source.Dock = DockStyle.Fill; source.Margin = new Padding(3, 0, actionColumn == actionCount - 1 ? 0 : 3, 0); source.Font = LauncherFont.Create(9);
                     actions.Controls.Add(source, actionColumn++, 0);
                 }
                 if (mod.Discord is { } discord)
                 {
                     var source = MakeButton("Discord", () => OpenUrl(discord.AbsoluteUri), icon: "discord");
                     source.Tag = "card-button";
-                    source.Dock = DockStyle.Fill; source.Margin = new Padding(3, 0, 0, 0); source.Font = new Font("Segoe UI", 9);
+                    source.Dock = DockStyle.Fill; source.Margin = new Padding(3, 0, 0, 0); source.Font = LauncherFont.Create(9);
                     actions.Controls.Add(source, actionColumn, 0);
                 }
                 bool? stackedActions = null;
@@ -148,7 +148,7 @@ public sealed partial class MainForm
                 feedback.Text = entries.Count == 0 ? T("No mods have been published yet.", "Henüz mod yayımlanmamış.") : T($"{entries.Count} mods • Downloads require your approval.", $"{entries.Count} mod • İndirme senin onayınla başlar.");
             }
             catch (OperationCanceledException) { if (Current()) feedback.Text = T("Loading timed out. Try Refresh.", "Yükleme zaman aşımına uğradı. Yenile ile tekrar dene."); }
-            catch (Exception ex) { if (Current()) { feedback.Text = T("The repository could not be loaded. Try Refresh.", "Depo yüklenemedi. Yenile ile tekrar dene."); LogAction($"Mod catalog loading failed: {ex.Message}"); } }
+            catch (Exception ex) { if (Current()) { feedback.Text = T("The repository could not be loaded. Try Refresh.", "Depo yüklenemedi. Yenile ile tekrar dene."); LogAction($"Mod catalog loading failed: {ex.Message}", $"Mod kataloğu yüklenemedi: {ex.Message}"); } }
             finally { fetching = false; if (Current()) { refresh.Enabled = true; Render(); } }
         }
         refresh.Click += async (_, _) => await LoadCatalog();
@@ -190,7 +190,7 @@ public sealed partial class MainForm
             timeout.Token.ThrowIfCancellationRequested();
             Directory.CreateDirectory(modsFolder); File.Copy(staged, target, overwrite: replace);
             if (currentPage == "Mods") RefreshMods();
-            LogAction($"Added verified catalog mod: {mod.FileName}");
+            LogAction($"Added verified catalog mod: {mod.FileName}", $"Doğrulanmış katalog modu eklendi: {mod.FileName}");
             UpdateStatus(T($"{mod.Name} added to your mods.", $"{mod.Name} modlarına eklendi."));
             if (!IsDisposed) ShowThemedPopup(T("Mod added", "Mod eklendi"), T($"{mod.FileName} was added to your local mods.", $"{mod.FileName} yerel modlarına eklendi."));
         }

@@ -41,22 +41,37 @@ public sealed partial class MainForm
         details.Dock = DockStyle.Top; details.Height = 34; details.TextAlign = ContentAlignment.MiddleCenter;
         var stage = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 20, Padding = new Padding(8), Tag = "card" };
         stage.Controls.Add(preview);
-        var layer = new SymbolButton { Symbol = "Addons", AccessibleName = T("Layers", "Katmanlar"), Size = new Size(34, 34), Location = new Point(12, 43) };
-        layer.Click += (_, _) => preview.ToggleLayers();
-        stage.Controls.Add(layer); layer.BringToFront();
+        var layer = new SymbolButton { Symbol = "layers", AccessibleName = T("Layers", "Katmanlar"), Size = new Size(34, 34), Anchor = AnchorStyles.None };
         var motion = MakeButton(T("Motion · Idle", "Hareket · Duruş"), () => { });
         motion.Dock = DockStyle.Fill; motion.Tag = "primary";
-        motion.Click += (_, _) => motion.Text = preview.NextMotion() switch
-        { 1 => T("Motion · Walk", "Hareket · Yürüme"), 2 => T("Motion · Run", "Hareket · Koşma"), _ => T("Motion · Idle", "Hareket · Duruş") };
-        var motionBar = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 38, ColumnCount = 2, RowCount = 1, Tag = "card" };
+        var motionBar = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 38, ColumnCount = 3, RowCount = 1, Tag = "card" };
         motionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        motionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 43));
         motionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 43));
         motion.Margin = new Padding(0, 0, 6, 0);
         motionBar.Controls.Add(motion, 0, 0);
         stage.Controls.Add(motionBar);
         stage.Controls.Add(details);
         var trash = new SymbolButton { Symbol = "trash", Size = new Size(36, 36), Anchor = AnchorStyles.None, Margin = Padding.Empty, AccessibleName = T("Remove skin", "Skini kaldır") };
-        motionBar.Controls.Add(trash, 1, 0);
+        motionBar.Controls.Add(layer, 1, 0);
+        motionBar.Controls.Add(trash, 2, 0);
+        var layerMessage = new System.Windows.Forms.Timer { Interval = 2000 };
+        string motionText = motion.Text;
+        motion.Click += (_, _) =>
+        {
+            motionText = preview.NextMotion() switch
+            { 1 => T("Motion · Walk", "Hareket · Yürüme"), 2 => T("Motion · Run", "Hareket · Koşma"), _ => T("Motion · Idle", "Hareket · Duruş") };
+            if (!layerMessage.Enabled) motion.Text = motionText;
+        };
+        layer.Click += (_, _) =>
+        {
+            bool enabled = preview.ToggleLayers();
+            layerMessage.Stop();
+            layerMessage.Start();
+            motion.Text = enabled ? T("Layers: on", "Katman: açık") : T("Layers: off", "Katman: kapalı");
+        };
+        layerMessage.Tick += (_, _) => { layerMessage.Stop(); motion.Text = motionText; };
+        view.Disposed += (_, _) => layerMessage.Dispose();
         right.Controls.Add(searchCard, 0, 0);
         right.Controls.Add(grid, 0, 1);
         view.Controls.Add(stage, 0, 1);
@@ -73,6 +88,7 @@ public sealed partial class MainForm
         bool favoritesFolder = false;
         SkinEntry? selection = null;
         AnimatedRoundButton? favoriteButton = null;
+        AnimatedRoundButton? exportButton = null, editButton = null, applyButton = null;
         SkinEntry? Selected() => selection;
         bool Current() => !view.IsDisposed && skinView == view;
         void Status(string en, string tr) => UpdateStatus(T(en, tr));
@@ -118,6 +134,9 @@ public sealed partial class MainForm
         void SelectSkin(SkinEntry? skin)
         {
             selection = skin;
+            if (exportButton != null) exportButton.Enabled = skin is not null;
+            if (editButton != null) editButton.Enabled = skin is not null;
+            if (applyButton != null) applyButton.Enabled = skin is not null;
             if (favoriteButton != null)
             {
                 favoriteButton.Visible = entries.Count > 0 || detected.Count > 0;
@@ -157,9 +176,10 @@ public sealed partial class MainForm
             catch (Exception ex) { ShowError(ex, T("Skin action failed", "Skin işlemi başarısız")); }
         }, 144);
         apply.Tag = "primary";
+        applyButton = apply;
         applyBar.Controls.Add(apply);
         view.Controls.Add(applyBar, 1, 2);
-        Add(T("Export", "Dışa aktar"), () =>
+        exportButton = Add(T("Export", "Dışa aktar"), () =>
         {
             var skin = Selected();
             if (folder == null && skin == null) return;
@@ -179,7 +199,7 @@ public sealed partial class MainForm
             entries = library.Read();
             SendEntries(skin.Id);
         });
-        Add(T("Edit", "Düzenle"), () =>
+        editButton = Add(T("Edit", "Düzenle"), () =>
         {
             if (Selected() is not { } skin) return;
             bool local = !entries.Contains(skin);
@@ -292,6 +312,8 @@ public sealed partial class MainForm
         {
             base.OnPaint(e);
             var icon = new Rectangle((Width-40)/2, 9, 40, 40);
+            var state = e.Graphics.Save();
+            ApplyIconMotion(e.Graphics, icon);
             if (thumbnail is not null)
             {
                 e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
@@ -300,6 +322,7 @@ public sealed partial class MainForm
             }
             else
                 SoftIcons.Draw(e.Graphics, favoritesFolder ? "skin-star" : "skin-pack", icon, ForeColor, true);
+            e.Graphics.Restore(state);
             if (favorite) SoftIcons.Draw(e.Graphics, "skin-star", new RectangleF(Width - 23, 6, 16, 16), ForeColor, true);
             TextRenderer.DrawText(e.Graphics, title, Font,
                 new Rectangle(5, 51, Width-10, Height-55), ForeColor,

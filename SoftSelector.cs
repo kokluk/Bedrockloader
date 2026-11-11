@@ -22,13 +22,14 @@ public sealed partial class MainForm
 
     sealed class SelectorMenu : ToggleContextMenu
     {
+        internal const int Radius = 22;
         public SelectorMenu()
         {
             DropShadowEnabled = false;
             Padding = new Padding(1, 0, 1, 7);
             reveal.Tick += (_, _) =>
             {
-                double t = Math.Clamp(System.Diagnostics.Stopwatch.GetElapsedTime(openedAt).TotalMilliseconds / 230, 0, 1);
+                double t = Math.Clamp(System.Diagnostics.Stopwatch.GetElapsedTime(openedAt).TotalMilliseconds / 190, 0, 1);
                 UpdateRegion(1 - Math.Pow(1 - t, 3));
                 if (t >= 1) reveal.Stop();
             };
@@ -41,12 +42,12 @@ public sealed partial class MainForm
         }
         readonly System.Windows.Forms.Timer reveal = new() { Interval = 15 };
         long openedAt;
-        public bool AnimateOpening { get; init; }
+        public bool RevealFromBottom { get; init; }
 
         protected override void OnOpened(EventArgs e)
         {
             base.OnOpened(e);
-            if (!AnimateOpening || AnimatedRoundButton.ReducedMotion) return;
+            if (AnimatedRoundButton.ReducedMotion) return;
             openedAt = System.Diagnostics.Stopwatch.GetTimestamp();
             UpdateRegion(0);
             reveal.Start();
@@ -68,8 +69,11 @@ public sealed partial class MainForm
         void UpdateRegion(double amount)
         {
             if (Width < 2 || Height < 2) return;
-            int height = Math.Clamp((int)Math.Round(Height * amount), Math.Min(12, Height), Height);
-            using var path = RoundedPath(new Rectangle(0, Height - height, Width, height), Math.Min(18, height / 2));
+            int initialHeight = Math.Min(42, Height);
+            int height = initialHeight + (int)Math.Round((Height - initialHeight) * amount);
+            int width = Math.Max(2, (int)Math.Round(Width * (.92 + .08 * amount)));
+            using var path = RoundedPath(new Rectangle((Width - width) / 2, RevealFromBottom ? Height - height : 0, width, height),
+                Math.Min(Radius, height / 2));
             var previous = Region;
             Region = new Region(path);
             previous?.Dispose();
@@ -84,7 +88,7 @@ public sealed partial class MainForm
         protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
         {
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using var path = RoundedPath(new Rectangle(0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1), 18);
+            using var path = RoundedPath(new Rectangle(0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1), SelectorMenu.Radius);
             using var pen = new Pen(MixColors(owner.SurfaceAlt, owner.Accent, 0.6), 1);
             e.Graphics.DrawPath(pen, path);
         }
@@ -190,7 +194,10 @@ public sealed partial class MainForm
             using var pen = new Pen(ForeColor, 1.8f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
             float x = Width - 24, y = Height / 2f;
             float direction = menu.Visible ? -1 : 1;
+            var state = e.Graphics.Save();
+            ApplyIconMotion(e.Graphics, new RectangleF(x - 8, y - 8, 16, 16));
             e.Graphics.DrawLines(pen, new[] { new PointF(x - 4, y - 2 * direction), new PointF(x, y + 2 * direction), new PointF(x + 4, y - 2 * direction) });
+            e.Graphics.Restore(state);
         }
         protected override void Dispose(bool disposing) { if (disposing) menu.Dispose(); base.Dispose(disposing); }
     }

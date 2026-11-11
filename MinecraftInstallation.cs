@@ -12,8 +12,20 @@ public sealed partial class MainForm
     protected override void OnActivated(EventArgs e)
     {
         base.OnActivated(e);
-        if (currentPage != "Home" || minecraftLaunchButton is not { IsDisposed: false } button) return;
-        button.Text = MinecraftInstallation.IsInstalled(settings.ContentPath)
+        if (settings.FollowWindowsTheme && lightMode != WindowsUsesLightTheme())
+        {
+            lightMode = !lightMode;
+            BuildShellRefresh();
+        }
+        if (currentPage != "Home") return;
+        if (cinnabarMode) RefreshCinnabarButton();
+        else if (minecraftLaunchButton is { IsDisposed: false } button) RefreshMinecraftButton(button);
+    }
+
+    void RefreshMinecraftButton(Button button)
+    {
+        button.Enabled = !installingMinecraft;
+        button.Text = installingMinecraft ? T("Installing Minecraft…", "Minecraft yükleniyor…") : MinecraftInstallation.IsInstalled(settings.ContentPath)
             ? T("Launch Minecraft", "Minecraft'ı başlat") : T("Install Minecraft", "Minecraft'ı yükle");
     }
 }

@@ -93,6 +93,7 @@ public sealed partial class MainForm
             image.Disposed += (_, _) => image.Image?.Dispose();
             var label = new Label { Text = title, AutoEllipsis = true, TextAlign = ContentAlignment.MiddleCenter, ForeColor = TextColor, Bounds = new Rectangle(8, 97, 142, 21) };
             var open = MakeButton(T("Open folder", "Klasörü aç"), () => OpenUrl(folder), 126);
+            open.Outline = true;
             open.Bounds = new Rectangle(16, 121, 126, 29);
             card.Controls.AddRange([image, label, open]);
             grid.Controls.Add(card);

@@ -23,12 +23,12 @@ public sealed partial class MainForm
         close.Click += (_, _) => popup.DialogResult = DialogResult.Cancel;
         header.Controls.Add(title); header.Controls.Add(close);
         var explanation = WrappedText(T("Choose your Minecraft version. Download starts only when you select Download & install.", "Minecraft sürümünü seç. İndirme yalnızca İndir ve kur seçildiğinde başlar."), 10); explanation.Dock = DockStyle.Fill;
-        var selector = new SoftSelector(this) { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 4), Font = new Font("Segoe UI", 10), AccessibleName = T("Minecraft version", "Minecraft sürümü") };
+        var selector = new SoftSelector(this) { Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 4), Font = LauncherFont.Create(10), AccessibleName = T("Minecraft version", "Minecraft sürümü") };
         foreach (var variant in mod.Variants)
             selector.Items.Add(variant.Version == mod.DefaultVariant ? T($"{variant.Version} (Latest — default)", $"{variant.Version} (Son sürüm — varsayılan)") : variant.Version);
         selector.SelectedIndex = mod.Variants.ToList().FindIndex(v => v.Version == mod.DefaultVariant);
         ApplyButtonPalette(selector);
-        var details = new ScrollTextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9), BackColor = Surface, ForeColor = Muted, TabStop = false };
+        var details = new ScrollTextBox { Dock = DockStyle.Fill, Font = LauncherFont.Create(9), BackColor = Surface, ForeColor = Muted, TabStop = false };
         void UpdateDetails()
         {
             var variant = mod.Variants[selector.SelectedIndex];

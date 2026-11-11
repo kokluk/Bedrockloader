@@ -124,7 +124,7 @@ public sealed partial class MainForm
             }
         }
         else if (!shaders && !skins) { tabs.Controls.Add(resources, 1, 0); tabs.Controls.Add(behaviors, 2, 0); }
-        foreach (Control button in tabs.Controls) { button.Dock = DockStyle.Fill; button.Margin = new Padding(0, 0, 6, 6); if (button is Button) button.Font = new Font("Segoe UI", 9); }
+        foreach (Control button in tabs.Controls) { button.Dock = DockStyle.Fill; button.Margin = new Padding(0, 0, 6, 6); if (button is Button) button.Font = LauncherFont.Create(9); }
         var searchRow = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Tag = "page", Margin = Padding.Empty };
         searchRow.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         searchRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); searchRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 84)); searchRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
@@ -132,7 +132,7 @@ public sealed partial class MainForm
         var search = MakeTextBox(); search.BorderStyle = BorderStyle.None; search.Dock = DockStyle.Fill; search.PlaceholderText = T("Search packs…", "Paket ara…"); search.AccessibleName = T("Search CurseForge packs", "CurseForge paketlerinde ara");
         searchHost.Controls.Add(search);
         var find = MakeButton(T("Search", "Ara"), () => { }); find.Dock = DockStyle.Fill; find.Margin = new Padding(0, 0, 6, 6);
-        var connect = MakeButton(T("Connection", "Bağlantı"), () => { }); connect.Dock = DockStyle.Fill; connect.Margin = new Padding(0, 0, 0, 6); connect.Font = new Font("Segoe UI", 9);
+        var connect = MakeButton(T("Connection", "Bağlantı"), () => { }); connect.Dock = DockStyle.Fill; connect.Margin = new Padding(0, 0, 0, 6); connect.Font = LauncherFont.Create(9);
         searchRow.Controls.Add(searchHost, 0, 0); searchRow.Controls.Add(find, 1, 0); searchRow.Controls.Add(connect, 2, 0);
         toolbar.Controls.Add(tabs, 0, 0); toolbar.Controls.Add(searchRow, 0, 1);
         var feedback = WrappedText(""); feedback.Dock = DockStyle.Fill;
@@ -205,9 +205,9 @@ public sealed partial class MainForm
                     var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Tag = "card", Margin = Padding.Empty };
                     actions.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
                     actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58)); actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
-                    var install = MakeButton(T("Download & install", "İndir ve kur"), () => { }, icon: "download"); install.Tag = "primary"; install.Dock = DockStyle.Fill; install.Margin = new Padding(0, 0, 4, 0); install.Font = new Font("Segoe UI", 9); install.Enabled = pack.CanDistribute && !installingCursePack;
+                    var install = MakeButton(T("Download & install", "İndir ve kur"), () => { }, icon: "download"); install.Tag = "primary"; install.Dock = DockStyle.Fill; install.Margin = new Padding(0, 0, 4, 0); install.Font = LauncherFont.Create(9); install.Enabled = pack.CanDistribute && !installingCursePack;
                     install.Click += async (_, _) => await InstallCursePack(pack, lifetime.Token, worlds, shaders, skins);
-                    var website = MakeButton("CurseForge", () => OpenUrl(pack.Website.AbsoluteUri)); website.Tag = "card-button"; website.Dock = DockStyle.Fill; website.Margin = new Padding(4, 0, 0, 0); website.Font = new Font("Segoe UI", 9);
+                    var website = MakeButton("CurseForge", () => OpenUrl(pack.Website.AbsoluteUri)); website.Tag = "card-button"; website.Dock = DockStyle.Fill; website.Margin = new Padding(4, 0, 0, 0); website.Font = LauncherFont.Create(9);
                     actions.Controls.Add(install, 0, 0);
                     if (worlds) { actions.SetColumnSpan(install, 2); website.Dispose(); }
                     else actions.Controls.Add(website, 1, 0);
@@ -302,7 +302,7 @@ public sealed partial class MainForm
                 return;
             }
             int count = InstallPackageArchive(staged, 0);
-            LogAction($"Installed {count} CurseForge pack(s), project {pack.Id}");
+            LogAction($"Installed {count} CurseForge pack(s), project {pack.Id}", $"{count} CurseForge paketi kuruldu, proje {pack.Id}");
             UpdateStatus(T($"Installed {count} pack(s). Enable them in Minecraft world settings.", $"{count} paket kuruldu. Minecraft dünya ayarlarından etkinleştir."));
             ShowThemedPopup(T("Pack installed", "Paket kuruldu"), T($"{pack.Name} is installed. You can enable it in Minecraft.", $"{pack.Name} kuruldu. Minecraft içinden etkinleştirebilirsin."));
         }

@@ -39,7 +39,7 @@ public sealed partial class MainForm
             Invalidate();
         }
 
-        public void ToggleLayers() { layers = !layers; Invalidate(); }
+        public bool ToggleLayers() { layers = !layers; Invalidate(); return layers; }
         public int NextMotion()
         {
             motion = (motion + 1) % 3;
@@ -74,7 +74,11 @@ public sealed partial class MainForm
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            if (texture is not { } bitmap) return;
+            if (texture is not { } bitmap)
+            {
+                SoftIcons.Draw(e.Graphics, "question", new RectangleF((Width - 64) / 2f, (Height - 64) / 2f, 64, 64), ForeColor);
+                return;
+            }
             var camera = Matrix4x4.CreateRotationY(yaw) * Matrix4x4.CreateRotationX(pitch);
             float scale = Math.Min(Width / 25f, Height / 38f) * zoom;
             float swing = motion == 0 ? 0 : MathF.Sin((float)(Environment.TickCount64 % 100000) * (motion == 1 ? .007f : .012f)) * (motion == 1 ? .48f : .82f);
@@ -166,7 +170,7 @@ public sealed partial class MainForm
         erase.Click += (_, _) => SetEraser(!erasing);
         SetEraser(false);
         Color ink = Color.White;
-        var palette = new RoundedPanel { Dock = DockStyle.Left, Width = 132, CornerRadius = 18,
+        var palette = new RoundedPanel { Dock = DockStyle.Left, Width = 150, CornerRadius = 18,
             BackColor = SurfaceAlt, Padding = new Padding(9) };
         var colorPreview = new RoundedPanel { Dock = DockStyle.Top, Height = 26, CornerRadius = 9, BackColor = ink };
         var hex = MakeTextBox("#FFFFFF");
@@ -181,18 +185,24 @@ public sealed partial class MainForm
             colorPreview.BackColor = ink;
             SetEraser(false);
         };
+        var wheel = new SkinColorWheel { Dock = DockStyle.Top, Height = 105,
+            AccessibleName = T("Color wheel", "Renk çarkı") };
+        wheel.ColorPicked += color => hex.Text = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
         var swatches = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, Padding = new Padding(0, 5, 0, 0) };
         foreach (string code in new[] { "#FFFFFF", "#CCCCCC", "#777777", "#181818", "#E05263", "#FA98AB",
                      "#F79455", "#FFD66B", "#8BCC7E", "#38AC76", "#4EBAC0", "#368FDA",
-                     "#6575D5", "#9E75DE", "#E886CF", "#825642", "#DCAD90", "#F8D2B6" })
+                     "#6575D5", "#9E75DE", "#E886CF", "#825642", "#DCAD90", "#F8D2B6",
+                     "#000000", "#922134", "#A54217", "#876308", "#315427", "#095E64",
+                     "#153878", "#41296E", "#802658", "#FFEEE2", "#AAF0D7", "#BCCEFF" })
         {
             Color color = ColorTranslator.FromHtml(code);
-            var swatch = new MaterialColorButton { SwatchColor = color, BackColor = color, Size = new Size(29, 28),
-                Margin = new Padding(3), CornerRadius = 8, AccessibleName = code };
+            var swatch = new MaterialColorButton { SwatchColor = color, BackColor = color, Size = new Size(23, 23),
+                Margin = new Padding(2), CornerRadius = 11, AccessibleName = code };
             swatch.Click += (_, _) => { hex.Text = code; SetEraser(false); };
             swatches.Controls.Add(swatch);
         }
         palette.Controls.Add(swatches);
+        palette.Controls.Add(wheel);
         palette.Controls.Add(hex);
         palette.Controls.Add(colorPreview);
         var save = MakeButton(T("Save", "Kaydet"), () => dialog.DialogResult = DialogResult.OK, 90);
@@ -209,10 +219,22 @@ public sealed partial class MainForm
         header.Controls.Add(closeHost);
         var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 53, Padding = new Padding(0, 8, 0, 0), WrapContents = false };
         close.Click += (_, _) => dialog.DialogResult = DialogResult.Cancel;
-        var canvas = new PictureBox { Dock = DockStyle.Fill, BackColor = SurfaceAlt };
+        var canvas = new PictureBox { Dock = DockStyle.Fill, BackColor = SurfaceAlt, Margin = Padding.Empty };
         var overlay = MakeButton(T("Overlay PNG", "Bindir"), OverlayPng, 100);
         ApplyButtonPalette(overlay);
-        bar.Controls.AddRange([model, erase, overlay]);
+        bool showLayers = true;
+        using var layerStatus = new System.Windows.Forms.Timer { Interval = 2000 };
+        var layerButton = MakeButton(T("Layers", "Katman"), () => { }, 145, "layers");
+        ApplyButtonPalette(layerButton);
+        layerButton.Click += (_, _) =>
+        {
+            showLayers = !showLayers;
+            layerButton.Text = showLayers ? T("Layers: on", "Katman: açık") : T("Layers: off", "Katman: kapalı");
+            layerStatus.Stop(); layerStatus.Start();
+            canvas.Invalidate();
+        };
+        layerStatus.Tick += (_, _) => { layerStatus.Stop(); layerButton.Text = T("Layers", "Katman"); };
+        bar.Controls.AddRange([model, erase, overlay, layerButton]);
         var footer = new Panel { Dock = DockStyle.Bottom, Height = 53 };
         save.Dock = DockStyle.Right;
         var saveHost = new Panel { Dock = DockStyle.Right, Width = 96, Padding = new Padding(0, 8, 0, 8) };
@@ -223,28 +245,43 @@ public sealed partial class MainForm
         dialog.CancelButton = close;
         Rectangle Area()
         {
-            int scale = Math.Max(1, Math.Min(canvas.Width/bitmap.Width, canvas.Height/bitmap.Height));
-            return new Rectangle((canvas.Width-bitmap.Width*scale)/2, (canvas.Height-bitmap.Height*scale)/2,
-                bitmap.Width*scale, bitmap.Height*scale);
+            int side = Math.Max(1, Math.Min(canvas.Width, canvas.Height) - 12);
+            if (side >= bitmap.Width) side -= side % bitmap.Width;
+            return new Rectangle((canvas.Width - side) / 2, (canvas.Height - side) / 2, side, side);
         }
+        Rectangle[] layerRects = [new(32, 0, 32, 16), new(0, 32, 56, 16), new(0, 48, 16, 16), new(48, 48, 16, 16)];
         canvas.Paint += (_, e) =>
         {
             e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
-            e.Graphics.DrawImage(bitmap, Area());
+            var area = Area();
+            if (!showLayers)
+                foreach (var rect in layerRects)
+                    e.Graphics.ExcludeClip(new Rectangle(area.X + rect.X * area.Width / 64, area.Y + rect.Y * area.Height / 64,
+                        rect.Width * area.Width / 64, rect.Height * area.Height / 64));
+            e.Graphics.DrawImage(bitmap, area);
         };
         void PaintPixel(object? sender, MouseEventArgs e)
         {
             var area = Area();
             if (e.Button != MouseButtons.Left || !area.Contains(e.Location)) return;
-            bitmap.SetPixel((e.X-area.X)*bitmap.Width/area.Width, (e.Y-area.Y)*bitmap.Height/area.Height,
-                erasing ? Color.Transparent : ink);
+            int x = (e.X - area.X) * bitmap.Width / area.Width, y = (e.Y - area.Y) * bitmap.Height / area.Height;
+            if (!showLayers && layerRects.Any(rect => rect.Contains(x * 64 / bitmap.Width, y * 64 / bitmap.Height))) return;
+            bitmap.SetPixel(x, y, erasing ? Color.Transparent : ink);
             canvas.Invalidate();
         }
         canvas.MouseDown += PaintPixel;
         canvas.MouseMove += PaintPixel;
-        dialog.Controls.Add(canvas);
-        dialog.Controls.Add(palette);
+        var editor = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Margin = Padding.Empty };
+        editor.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
+        editor.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 13));
+        editor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        var separator = new Panel { Dock = DockStyle.Fill, Margin = new Padding(6, 7, 6, 7), BackColor = MixColors(Surface, TextColor, .20) };
+        editor.Controls.Add(palette, 0, 0);
+        palette.Dock = DockStyle.Fill;
+        editor.Controls.Add(separator, 1, 0);
+        editor.Controls.Add(canvas, 2, 0);
+        dialog.Controls.Add(editor);
         dialog.Controls.Add(footer);
         dialog.Controls.Add(header);
         void OverlayPng()

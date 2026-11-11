@@ -48,18 +48,28 @@ internal static class SoftIcons
                     }).ToArray();
                     using (var outline = new Pen(color, 1.8f) { LineJoin = LineJoin.Round })
                     {
-                        graphics.FillPolygon(solid, star);
+                        graphics.FillPolygon(fill, star);
                         graphics.DrawPolygon(outline, star);
                     }
                     break;
                 case "skin-pack":
                     using (var folder = new GraphicsPath())
                     {
-                        folder.AddPolygon(new Point[] {new Point(3, 6), new Point(9, 6), new Point(11, 8), new Point(21, 8), new Point(21, 19), new Point(3, 19) });
+                        folder.StartFigure();
+                        folder.AddLine(3, 17, 3, 8);
+                        folder.AddBezier(3, 8, 3, 6, 4, 5, 6, 5);
+                        folder.AddLine(6, 5, 9, 5);
+                        folder.AddLine(9, 5, 12, 8);
+                        folder.AddLine(12, 8, 18, 8);
+                        folder.AddBezier(18, 8, 20, 8, 21, 9, 21, 11);
+                        folder.AddLine(21, 11, 21, 17);
+                        folder.AddBezier(21, 17, 21, 19, 20, 20, 18, 20);
+                        folder.AddLine(18, 20, 6, 20);
+                        folder.AddBezier(6, 20, 4, 20, 3, 19, 3, 17);
+                        folder.CloseFigure();
                         graphics.FillPath(fill, folder);
                         graphics.DrawPath(pen, folder);
                     }
-                    graphics.DrawRectangle(pen, 9, 11, 6, 5);
                     break;
                 case "game-switch":
                     graphics.DrawArc(pen, 4, 4, 16, 16, 205, 145);
@@ -97,6 +107,11 @@ internal static class SoftIcons
                     }
                     break;
                 case "Addons":
+                    Shape(Round(4, 8, 16, 12, 3));
+                    Shape(Round(3, 4, 18, 5, 2));
+                    Line(10, 13, 14, 13);
+                    break;
+                case "layers":
                     using (var p = new GraphicsPath())
                     {
                         p.AddLine(3, 8, 10, 4); p.AddBezier(10, 4, 11, 3.4f, 13, 3.4f, 14, 4); p.AddLine(14, 4, 21, 8);
@@ -118,7 +133,13 @@ internal static class SoftIcons
                     }
                     break;
                 case "Logs":
-                    Shape(Round(4, 3, 16, 18, 4)); Line(8, 8, 16, 8); Line(8, 12, 16, 12); Line(8, 16, 13, 16); break;
+                    Shape(Round(3, 4, 18, 16, 4));
+                    for (int y = 8; y <= 16; y += 4)
+                    {
+                        graphics.FillEllipse(solid, 6.3f, y - 1, 2, 2);
+                        Line(11, y, y == 16 ? 15 : 17.5f, y);
+                    }
+                    break;
                 case "About":
                     graphics.FillEllipse(fill, 3, 3, 18, 18); graphics.DrawEllipse(pen, 3, 3, 18, 18);
                     Line(12, 11, 12, 16); graphics.FillEllipse(solid, 11, 7, 2, 2); break;
@@ -158,8 +179,19 @@ internal static class SoftIcons
                     using (var p = new GraphicsPath())
                     {
                         p.AddBezier(9, 5.5f, 8, 5, 7, 5.5f, 7, 6.8f); p.AddLine(7, 6.8f, 7, 17.2f); p.AddBezier(7, 17.2f, 7, 18.5f, 8, 19, 9, 18.5f);
-                        p.AddLine(9, 18.5f, 18, 13.2f); p.AddBezier(18, 13.2f, 19.3f, 12.5f, 19.3f, 11.5f, 18, 10.8f); p.AddLine(18, 10.8f, 9, 5.5f); p.CloseFigure(); graphics.FillPath(solid, p);
+                        p.AddLine(9, 18.5f, 18, 13.2f); p.AddBezier(18, 13.2f, 19.3f, 12.5f, 19.3f, 11.5f, 18, 10.8f); p.AddLine(18, 10.8f, 9, 5.5f); p.CloseFigure(); graphics.FillPath(Brushes.Black, p);
                     }
+                    break;
+                case "sliders":
+                    Line(4, 6, 20, 6); Line(4, 12, 20, 12); Line(4, 18, 20, 18);
+                    foreach (var point in new[] { new Point(9, 6), new Point(15, 12), new Point(10, 18) })
+                        graphics.FillEllipse(solid, point.X - 2.5f, point.Y - 2.5f, 5, 5);
+                    break;
+                case "question":
+                    graphics.DrawEllipse(pen, 3, 3, 18, 18);
+                    graphics.DrawArc(pen, 9, 7, 6, 6, 180, 230);
+                    Line(13, 12, 12, 14);
+                    graphics.FillEllipse(solid, 11, 16, 2, 2);
                     break;
                 case "download":
                     Line(12, 3, 12, 15); Line(7.5f, 10.5f, 12, 15); Line(12, 15, 16.5f, 10.5f);

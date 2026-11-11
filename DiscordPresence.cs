@@ -20,6 +20,7 @@ public sealed partial class MainForm
         Volatile.Write(ref presenceOptions, options with
         {
             ContentPath = settings.ContentPath,
+            LocalName = NormalizeLocalName(settings.LocalName),
             English = settings.Language == "EN",
             ApplicationId = string.IsNullOrWhiteSpace(options.ApplicationId) ? DefaultDiscordApplicationId : options.ApplicationId
         });
@@ -54,15 +55,16 @@ public sealed partial class MainForm
                             Volatile.Write(ref readyGeneration, 0);
                             sentGeneration = 0;
                             client = new DiscordRpcClient(options.ApplicationId);
-                            client.OnError += (_, _) => LogAction("Discord rejected a presence request.");
+                            client.OnError += (_, _) => LogAction("Discord rejected a presence request.", "Discord etkinlik isteğini reddetti.");
                             client.OnReady += (_, _) => Interlocked.Increment(ref readyGeneration);
-                            client.OnPresenceUpdate += (_, _) => LogAction("Discord acknowledged a presence update.");
+                            client.OnPresenceUpdate += (_, _) => LogAction("Discord acknowledged a presence update.", "Discord etkinlik güncellemesini onayladı.");
                         }
                         if (!client.IsInitialized) client.Initialize();
 
                         var snapshot = new PresenceSnapshot(
                             options.ShowVersion && game.Version is { } version
                                 ? (options.English ? "Version: " : "Sürüm: ") + version : null,
+                            options.LocalName.Length == 0 ? null : options.LocalName,
                             options.ShowTime ? game.StartedUtc : null,
                             string.IsNullOrWhiteSpace(options.LargeImage) ? "bedrockloader" : options.LargeImage, options.SmallImage);
                         int generation = Volatile.Read(ref readyGeneration);
@@ -71,6 +73,7 @@ public sealed partial class MainForm
                             client.SetPresence(new RichPresence
                             {
                                 Details = snapshot.Details,
+                                State = snapshot.LocalName,
                                 Timestamps = snapshot.StartedUtc is { } started ? new Timestamps { Start = started } : null,
                                 Assets = new Assets { LargeImageKey = snapshot.LargeImage, SmallImageKey = snapshot.SmallImage }
                             });
@@ -95,7 +98,7 @@ public sealed partial class MainForm
     static bool ValidDiscordId(string value) => ulong.TryParse(value, System.Globalization.NumberStyles.None,
         System.Globalization.CultureInfo.InvariantCulture, out ulong id) && id > 0;
 
-    sealed record PresenceSnapshot(string? Details, DateTime? StartedUtc, string LargeImage, string SmallImage);
+    sealed record PresenceSnapshot(string? Details, string? LocalName, DateTime? StartedUtc, string LargeImage, string SmallImage);
 
     void ConfigureDiscordPresence()
     {
@@ -193,6 +196,8 @@ public sealed partial class MainForm
         public string SmallImage { get; init; } = "";
         [System.Text.Json.Serialization.JsonIgnore]
         public string ContentPath { get; init; } = "";
+        [System.Text.Json.Serialization.JsonIgnore]
+        public string LocalName { get; init; } = "";
         [System.Text.Json.Serialization.JsonIgnore]
         public bool English { get; init; }
     }
