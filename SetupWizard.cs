@@ -148,7 +148,8 @@ public sealed partial class MainForm
                     "Minecraft etkinliğini Discord’da göster. Bir yerel ad girdiysen Rich Presence açıkken adın da görünür.")
             };
             accent.Visible = appearance.Visible = page == 2;
-            materials.Visible = page == 2 && accent.SelectedItem?.ToString() == "Material You";
+            bool showPalette = page == 2 && UsesAccentPalette(accent.SelectedItem?.ToString());
+            materials.Visible = showPalette;
             customization.Visible = page == 3;
             nameBox.Visible = page == 1;
             rpc.Visible = page == 4;
@@ -156,7 +157,7 @@ public sealed partial class MainForm
                 layout.RowStyles[row].Height = row switch
                 {
                     2 or 3 when page == 2 => 48,
-                    4 when page == 2 && accent.SelectedItem?.ToString() == "Material You" => 92,
+                    4 when showPalette => 92,
                     5 when page == 3 => 132,
                     6 when page == 1 => 48,
                     7 when page == 4 => 44,

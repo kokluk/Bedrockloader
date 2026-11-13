@@ -1047,8 +1047,7 @@ public sealed partial class MainForm : Form
             "Green" => Color.FromArgb(74, 210, 150),
             "Orange" => Color.FromArgb(255, 165, 80),
             "Red" => Color.FromArgb(255, 95, 105),
-            "AMOLED" => Color.FromArgb(128, 195, 255),
-            "Material You" => MaterialAccent(),
+            "AMOLED" or "Material You" => MaterialAccent(),
             _ => Color.FromArgb(50, 190, 240)
         };
     }

@@ -29,7 +29,7 @@ public sealed partial class MainForm
 
         if (!upgraded) return;
         ShowThemedPopup(T($"What's new in {DisplayVersion}", $"{DisplayVersion} sürümündeki yenilikler"),
-            T("• The launcher now displays its installed version in the title bar, About page, and updater.\n\n• AMOLED adds a pure-black background and dark gray panels in dark mode.",
-              "• Üst çubuk, Hakkında ekranı ve güncelleyici artık kurulu sürümü gösterir.\n\n• AMOLED, koyu modda siyah arka plan ve koyu gri paneller sunar."));
+            T("• AMOLED now offers the Material You color palette with a pure-black background in dark mode.",
+              "• AMOLED artık Material You renk paletini sunuyor. Koyu modda arka plan tam siyah kalıyor."));
     }
 }

@@ -16,6 +16,8 @@ public sealed partial class MainForm
         ("Slate", "Slate", "Taş", Color.FromArgb(190, 199, 218))
     };
 
+    static bool UsesAccentPalette(string? theme) => theme is "AMOLED" or "Material You";
+
     Color MaterialAccent()
     {
         var color = MaterialColors.FirstOrDefault(choice => choice.Id == settings.MaterialYouColor).Color;
@@ -34,7 +36,7 @@ public sealed partial class MainForm
             {
                 SwatchColor = color.Color, IsSelected = color.Id == settings.MaterialYouColor,
                 Width = 44, Height = 40, CornerRadius = 20, Margin = new Padding(0, 0, 6, 6),
-                AccessibleName = $"Material You: {name}", Cursor = Cursors.Hand, Tag = color.Id
+                AccessibleName = name, Cursor = Cursors.Hand, Tag = color.Id
             };
             ApplyButtonPalette(button);
             tips.SetToolTip(button, name);
@@ -47,7 +49,7 @@ public sealed partial class MainForm
                 else
                 {
                     SaveSettings(); ApplyTheme();
-                    UpdateStatus(T($"Material You color: {name}", $"Material You rengi: {name}"));
+                    UpdateStatus(T($"{settings.Theme} color: {name}", $"{settings.Theme} rengi: {name}"));
                 }
             };
             choices.Controls.Add(button);

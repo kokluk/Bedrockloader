@@ -1,3 +1,19 @@
+# BedrockLoader v0.17.12
+
+## Türkçe
+
+**AMOLED renk paleti**
+- Ayarlar ve kurulum sihirbazında AMOLED için sekiz vurgu rengi seçilebilir.
+- Seçim Material You ile ortaktır. Daha önce renk seçilmediyse Lavanta kullanılır. Koyu modda arka plan tam siyah kalır.
+
+## English
+
+**AMOLED color palette**
+- Choose from eight accent colors for AMOLED in Settings and the setup wizard.
+- The color choice is shared with Material You and defaults to Lavender. In dark mode, the background stays pure black.
+
+<!-- end-release-notes -->
+
 # BedrockLoader v0.17.11
 
 ## Türkçe

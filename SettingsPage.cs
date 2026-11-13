@@ -95,7 +95,7 @@ public sealed partial class MainForm
         layout.Controls.Add(advancedButton, 1, advancedRow);
         void RefreshSettingsRows()
         {
-            bool visible = settings.Theme == "Material You";
+            bool visible = UsesAccentPalette(settings.Theme);
             layout.SuspendLayout();
             paletteLabel.Visible = materialColors.Visible = visible;
             layout.RowStyles[2].Height = visible ? 100 : 0;
