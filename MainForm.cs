@@ -415,6 +415,7 @@ public sealed partial class MainForm : Form
         if (currentPage == "Servers") { serversView?.Dispose(); serversView = null; }
         DisposeSelfContainedPage();
         currentPage = key;
+        RefreshDiscordOptions();
         if (usageBadge is { IsDisposed: false })
         {
             usageBadge.Visible = settings.ShowUsage;

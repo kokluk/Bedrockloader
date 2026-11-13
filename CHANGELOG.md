@@ -1,3 +1,15 @@
+# Sıradaki sürüm / Next release
+
+## Türkçe
+
+- Discord Rich Presence ana ekranda **Ana Menü · Boşta 🌙** durumunu gösterir.
+- Minecraft çalışırken etkinlikte **Minecraft** ve paylaşım açıksa doğrulanmış sürüm görünür. Yerel kullanıcı adı girilmişse ikinci satırda gösterilir. Oyun süresi mevcut paylaşım ayarına bağlıdır.
+
+## English
+
+- Discord Rich Presence shows **Main Menu · Idle 🌙** on the launcher home screen.
+- While Minecraft is running, the activity shows **Minecraft** and its verified version when version sharing is enabled. The second line shows the local display name if configured. Elapsed time follows the existing sharing setting.
+
 # BedrockLoader v0.17.9 — Yama notları
 
 ## v0.17.6

@@ -22,6 +22,7 @@ public sealed partial class MainForm
             ContentPath = settings.ContentPath,
             LocalName = NormalizeLocalName(settings.LocalName),
             English = settings.Language == "EN",
+            OnHomePage = currentPage == "Home",
             ApplicationId = string.IsNullOrWhiteSpace(options.ApplicationId) ? DefaultDiscordApplicationId : options.ApplicationId
         });
     }
@@ -39,16 +40,17 @@ public sealed partial class MainForm
                 try
                 {
                     var options = Volatile.Read(ref presenceOptions);
-                    var game = options.Enabled && ValidDiscordId(options.ApplicationId)
-                        ? MinecraftInstallation.FindRunningGame(options.ContentPath) : null;
-                    if (game is null || applicationId != options.ApplicationId)
+                    bool enabled = options.Enabled && ValidDiscordId(options.ApplicationId);
+                    var game = enabled ? MinecraftInstallation.FindRunningGame(options.ContentPath) : null;
+                    bool showPresence = enabled && (game is not null || options.OnHomePage);
+                    if (!showPresence || applicationId != options.ApplicationId)
                     {
                         client?.Dispose();
                         client = null;
                         published = null;
                         applicationId = options.ApplicationId;
                     }
-                    if (game is not null)
+                    if (showPresence)
                     {
                         if (client == null)
                         {
@@ -61,19 +63,21 @@ public sealed partial class MainForm
                         }
                         if (!client.IsInitialized) client.Initialize();
 
-                        var snapshot = new PresenceSnapshot(
-                            options.ShowVersion && game.Version is { } version
-                                ? (options.English ? "Version: " : "Sürüm: ") + version : null,
-                            options.LocalName.Length == 0 ? null : options.LocalName,
-                            options.ShowTime ? game.StartedUtc : null,
-                            string.IsNullOrWhiteSpace(options.LargeImage) ? "bedrockloader" : options.LargeImage, options.SmallImage);
+                        string largeImage = string.IsNullOrWhiteSpace(options.LargeImage) ? "bedrockloader" : options.LargeImage;
+                        var snapshot = game is null
+                            ? new PresenceSnapshot(options.English ? "Main Menu" : "Ana Menü",
+                                options.English ? "Idle 🌙" : "Boşta 🌙", null, largeImage, options.SmallImage)
+                            : new PresenceSnapshot(options.ShowVersion && game.Version is { } version
+                                    ? $"Minecraft {version}" : "Minecraft",
+                                string.IsNullOrEmpty(options.LocalName) ? null : options.LocalName,
+                                options.ShowTime ? game.StartedUtc : null, largeImage, options.SmallImage);
                         int generation = Volatile.Read(ref readyGeneration);
                         if (client.IsInitialized && generation > 0 && (snapshot != published || generation != sentGeneration))
                         {
                             client.SetPresence(new RichPresence
                             {
                                 Details = snapshot.Details,
-                                State = snapshot.LocalName,
+                                State = snapshot.State,
                                 Timestamps = snapshot.StartedUtc is { } started ? new Timestamps { Start = started } : null,
                                 Assets = new Assets { LargeImageKey = snapshot.LargeImage, SmallImageKey = snapshot.SmallImage }
                             });
@@ -98,7 +102,7 @@ public sealed partial class MainForm
     static bool ValidDiscordId(string value) => ulong.TryParse(value, System.Globalization.NumberStyles.None,
         System.Globalization.CultureInfo.InvariantCulture, out ulong id) && id > 0;
 
-    sealed record PresenceSnapshot(string? Details, string? LocalName, DateTime? StartedUtc, string LargeImage, string SmallImage);
+    sealed record PresenceSnapshot(string Details, string? State, DateTime? StartedUtc, string LargeImage, string SmallImage);
 
     void ConfigureDiscordPresence()
     {
@@ -204,5 +208,7 @@ public sealed partial class MainForm
         public string LocalName { get; init; } = "";
         [System.Text.Json.Serialization.JsonIgnore]
         public bool English { get; init; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool OnHomePage { get; init; }
     }
 }
