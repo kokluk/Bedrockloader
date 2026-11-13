@@ -29,7 +29,7 @@ public sealed partial class MainForm
 
         if (!upgraded) return;
         ShowThemedPopup(T($"What's new in {DisplayVersion}", $"{DisplayVersion} sürümündeki yenilikler"),
-            T("• Discord shows Main Menu · Idle 🌙 on the launcher home screen. In Minecraft, it shows the version and local name when available.\n\n• The status area shows the selected theme.\n\n• The RAM badge uses an alternate measurement when Windows cannot report private resident memory.\n\n• Update notes follow the launcher language and can be scrolled.",
-              "• Discord, ana ekranda Ana Menü · Boşta 🌙 durumunu gösterir. Minecraft’ta varsa sürümü ve yerel adı gösterir.\n\n• Seçilen tema sol alttaki durum alanında görünür.\n\n• Windows özel bellek ölçümünü veremezse RAM göstergesi toplam fiziksel bellek kullanımını gösterir.\n\n• Güncelleme notları arayüz diline göre gösterilir ve kaydırılabilir."));
+            T("• The launcher now displays its installed version in the title bar, About page, and updater.\n\n• AMOLED adds a pure-black background and dark gray panels in dark mode.",
+              "• Üst çubuk, Hakkında ekranı ve güncelleyici artık kurulu sürümü gösterir.\n\n• AMOLED, koyu modda siyah arka plan ve koyu gri paneller sunar."));
     }
 }

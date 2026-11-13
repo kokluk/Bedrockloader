@@ -1,3 +1,23 @@
+# BedrockLoader v0.17.11
+
+## Türkçe
+
+**Sürüm bilgisi**
+- Üst çubuk, Hakkında ve Güncellemeler ekranı artık kurulu sürümü derlemeden okuyor. v0.17.9’da takılı kalan etiket düzeltildi.
+
+**AMOLED teması**
+- Ayarlar ve kurulum sihirbazına AMOLED eklendi. Koyu modda tam siyah arka plan, koyu gri paneller ve açık mavi vurgu kullanılıyor.
+
+## English
+
+**Version display**
+- The header, About page, and updater now read the installed version from the build. The label that stayed at v0.17.9 has been fixed.
+
+**AMOLED theme**
+- Added AMOLED to Settings and the setup wizard. In dark mode, it uses a pure black background, dark gray panels, and a light blue accent.
+
+<!-- end-release-notes -->
+
 # BedrockLoader v0.17.10
 
 ## Türkçe

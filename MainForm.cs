@@ -10,7 +10,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm : Form
 {
-    const string DisplayVersion = "v0.17.9";
+    static readonly string DisplayVersion = $"v{ReleaseUpdates.CurrentVersion.ToString(3)}";
     SymbolButton? updateLauncher;
     static readonly HttpClient Http = CreateHttpClient();
     readonly string modsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Minecraft bedrock", "mods");
@@ -111,7 +111,7 @@ public sealed partial class MainForm : Form
     static HttpClient CreateHttpClient()
     {
         var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("BedrockLoader/0.17.9 (Windows; .NET 8)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd($"BedrockLoader/{ReleaseUpdates.CurrentVersion.ToString(3)} (Windows; .NET 8)");
         return http;
     }
 
@@ -1033,6 +1033,10 @@ public sealed partial class MainForm : Form
             Surface = MixColors(Color.FromArgb(22, 23, 29), seed, 0.10);
             SurfaceAlt = MixColors(Color.FromArgb(32, 33, 40), seed, 0.17);
         }
+        else if (settings.Theme == "AMOLED")
+        {
+            Bg = Color.Black; Surface = Color.FromArgb(12, 12, 12); SurfaceAlt = Color.FromArgb(24, 24, 24);
+        }
         else
         {
             Bg = Color.FromArgb(8, 15, 23); Surface = Color.FromArgb(17, 28, 40); SurfaceAlt = Color.FromArgb(28, 43, 59);
@@ -1043,6 +1047,7 @@ public sealed partial class MainForm : Form
             "Green" => Color.FromArgb(74, 210, 150),
             "Orange" => Color.FromArgb(255, 165, 80),
             "Red" => Color.FromArgb(255, 95, 105),
+            "AMOLED" => Color.FromArgb(128, 195, 255),
             "Material You" => MaterialAccent(),
             _ => Color.FromArgb(50, 190, 240)
         };

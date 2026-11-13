@@ -4,7 +4,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm
 {
-    static readonly string[] ThemeChoices = ["Midnight", "Purple", "Green", "Orange", "Red", "Material You"];
+    static readonly string[] ThemeChoices = ["Midnight", "Purple", "Green", "Orange", "Red", "AMOLED", "Material You"];
 
     static string NormalizeLocalName(string? name) => string.Concat((name ?? "").EnumerateRunes()
         .Where(rune => !Rune.IsControl(rune) && Rune.GetUnicodeCategory(rune) != System.Globalization.UnicodeCategory.Format)

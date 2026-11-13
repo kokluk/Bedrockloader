@@ -4,7 +4,7 @@
 
 BedrockLoader, **Minecraft Bedrock** ve **Cinnabar** için bir Windows başlatıcısı ve içerik yöneticisi. Ana ekrandan oyunlar arasında geçebilir, modlarını, paketlerini, skinlerini, dünyalarını ve sunucularını yönetebilirsin.
 
-[Windows x64 kurulumu ve sürüm notları](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.10) · [Değişiklik geçmişi](CHANGELOG.md)
+[Windows x64 kurulumu ve sürüm notları](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.11) · [Değişiklik geçmişi](CHANGELOG.md)
 
 ## Uygulama önizlemesi
 
@@ -22,20 +22,22 @@ Skinleri 3B olarak önizle, favorilere ekle ve **Düzenle** düğmesiyle editör
 
 ### Temalar
 
+AMOLED teması koyu modda tam siyah arka plan ve koyu gri paneller kullanır.
+
 Hazır temalar arasından seçim yap veya Material You renk paletiyle arayüzü özelleştir.
 
 ![Ayarlar ekranında açık tema menüsü](docs/screenshots/themes-tr.png)
 
 ## Kurulum
 
-1. [v0.17.10 sürüm sayfasını](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.10) aç.
-2. **Assets** bölümünden **BedrockLoader-Setup-v0.17.10-x64.exe** dosyasını indir ve çalıştır.
+1. [v0.17.11 sürüm sayfasını](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.11) aç.
+2. **Assets** bölümünden **BedrockLoader-Setup-v0.17.11-x64.exe** dosyasını indir ve çalıştır.
 3. İlk açılışta tema, animasyon, tıklama sesi ve Discord Rich Presence tercihlerini seç. İstersen ana ekrandaki selamlamada kullanılacak bir ad ekle.
 
-Kurulum paketi .NET çalışma zamanını içerir. Dosyayı doğrulamak istersen, aynı sürümdeki **SHA256SUMS-v0.17.10.txt** dosyasıyla karşılaştırabilirsin.
+Kurulum paketi .NET çalışma zamanını içerir. Dosyayı doğrulamak istersen, aynı sürümdeki **SHA256SUMS-v0.17.11.txt** dosyasıyla karşılaştırabilirsin.
 
 ```powershell
-Get-FileHash .\BedrockLoader-Setup-v0.17.10-x64.exe -Algorithm SHA256
+Get-FileHash .\BedrockLoader-Setup-v0.17.11-x64.exe -Algorithm SHA256
 ```
 
 ## Oyunlar ve içerik
@@ -77,14 +79,14 @@ Windows x64 kurulum paketi üretmek için **Inno Setup 6** gerekir. Gerekirse ko
 .\installer\build.ps1 -IsccPath 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 ```
 
-Kurulum EXE’si **installer-output** klasörüne, bağımsız uygulama dosyaları **installer-payload-v0.17.10** klasörüne çıkar.
+Kurulum EXE’si **installer-output** klasörüne, bağımsız uygulama dosyaları **installer-payload-v0.17.11** klasörüne çıkar.
 
 ### Testler
 
 ```powershell
 dotnet run --project .\tests\PackLibrary.Tests -c Release
 dotnet run --project .\tests\BedrockServers.Tests -c Release
-dotnet run --project .\tests\ReleaseUpdates.Tests -c Release -- .\installer-payload-v0.17.10\BedrockLoader.exe
+dotnet run --project .\tests\ReleaseUpdates.Tests -c Release -- .\installer-payload-v0.17.11\BedrockLoader.exe
 ```
 
 Güncelleyici testi için önce kurulum derleme betiğini çalıştır. Test, verilen EXE’yi çalıştırmadan dosya doğrulamasında kullanır.
