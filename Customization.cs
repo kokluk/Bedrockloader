@@ -23,9 +23,11 @@ public sealed partial class MainForm
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         var footer = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
-        var ok = MakeButton(accept, () => dialog.DialogResult = DialogResult.OK, 125);
+        var ok = MakeButton(accept, () => dialog.DialogResult = DialogResult.OK, 120);
         ok.Tag = "primary";
-        var cancel = MakeButton(T("Cancel", "Vazgeç"), () => dialog.DialogResult = DialogResult.Cancel, 105);
+        var cancel = MakeButton(T("Cancel", "Vazgeç"), () => dialog.DialogResult = DialogResult.Cancel, 120);
+        ok.Margin = cancel.Margin = new Padding(5, 2, 5, 2);
+        ok.Height = cancel.Height = 36;
         footer.Controls.AddRange([ok, cancel]);
         grid.Controls.Add(footer, 0, 4);
         dialog.Controls.Add(grid);
@@ -97,12 +99,17 @@ public sealed partial class MainForm
 
     void ShowCustomization()
     {
+        var choices = MakeCustomizationChoices(out var apply);
+        var rpc = MakeChoice(T("Discord Rich Presence", "Discord Rich Presence"), settings.Discord.Enabled);
+        rpc.AccessibleDescription = T("Shows your game activity on Discord.", "Oyun etkinliğini Discord’da gösterir.");
         using var dialog = MakeChoiceDialog(T("Customization", "Özelleştirme"),
             T("Choose button effects, sound and window behavior.", "Düğme efektlerini, sesi ve pencere davranışını seç."),
-            MakeCustomizationChoices(out var apply), T("Save", "Kaydet"), 2);
+            [.. choices, rpc], T("Save", "Kaydet"), 2);
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
         apply();
+        settings.Discord = settings.Discord with { Enabled = rpc.Checked };
         SaveSettings();
+        RefreshDiscordOptions();
     }
 
     BackupParts? ChooseBackupParts(bool full, bool importing)

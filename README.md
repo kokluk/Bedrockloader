@@ -2,18 +2,18 @@
 
 BedrockLoader, **Minecraft Bedrock** ve **Cinnabar** için bir Windows başlatıcısı ve içerik yöneticisi. Ana ekrandan oyunlar arasında geçebilir, modlarını, paketlerini, skinlerini, dünyalarını ve sunucularını yönetebilirsin.
 
-[Windows x64 kurulumu ve sürüm notları](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.3) · [Değişiklik geçmişi](CHANGELOG.md)
+[Windows x64 kurulumu ve sürüm notları](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.5) · [Değişiklik geçmişi](CHANGELOG.md)
 
 ## Kurulum
 
-1. [v0.17.3 sürüm sayfasını](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.3) aç.
-2. **Assets** bölümünden **BedrockLoader-Setup-v0.17.3-x64.exe** dosyasını indir ve çalıştır.
+1. [v0.17.5 sürüm sayfasını](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.5) aç.
+2. **Assets** bölümünden **BedrockLoader-Setup-v0.17.5-x64.exe** dosyasını indir ve çalıştır.
 3. İlk açılışta tema, animasyon, tıklama sesi ve Discord Rich Presence tercihlerini seç. İstersen ana ekrandaki selamlamada kullanılacak bir ad ekle.
 
-Kurulum paketi .NET çalışma zamanını içerir. Dosyayı doğrulamak istersen, aynı sürümdeki **SHA256SUMS-v0.17.3.txt** dosyasıyla karşılaştırabilirsin.
+Kurulum paketi .NET çalışma zamanını içerir. Dosyayı doğrulamak istersen, aynı sürümdeki **SHA256SUMS-v0.17.5.txt** dosyasıyla karşılaştırabilirsin.
 
 ```powershell
-Get-FileHash .\BedrockLoader-Setup-v0.17.3-x64.exe -Algorithm SHA256
+Get-FileHash .\BedrockLoader-Setup-v0.17.5-x64.exe -Algorithm SHA256
 ```
 
 ## Oyunlar ve içerik
@@ -53,14 +53,14 @@ Windows x64 kurulum paketi üretmek için **Inno Setup 6** gerekir. Gerekirse ko
 .\installer\build.ps1 -IsccPath 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 ```
 
-Kurulum EXE’si **installer-output** klasörüne, bağımsız uygulama dosyaları **installer-payload-v0.17.3** klasörüne çıkar.
+Kurulum EXE’si **installer-output** klasörüne, bağımsız uygulama dosyaları **installer-payload-v0.17.5** klasörüne çıkar.
 
 ### Testler
 
 ```powershell
 dotnet run --project .\tests\PackLibrary.Tests -c Release
 dotnet run --project .\tests\BedrockServers.Tests -c Release
-dotnet run --project .\tests\ReleaseUpdates.Tests -c Release -- .\installer-payload-v0.17.3\BedrockLoader.exe
+dotnet run --project .\tests\ReleaseUpdates.Tests -c Release -- .\installer-payload-v0.17.5\BedrockLoader.exe
 ```
 
 Güncelleyici testi için önce kurulum derleme betiğini çalıştır. Test, verilen EXE’yi çalıştırmadan dosya doğrulamasında kullanır.
