@@ -114,6 +114,7 @@ public sealed partial class MainForm
         {
             settings.Theme = theme.SelectedItem?.ToString() ?? "Midnight";
             RefreshSettingsRows(); SaveSettings(); ApplyTheme();
+            UpdateStatus(T($"Theme: {settings.Theme}", $"Tema: {settings.Theme}"));
         };
         layout.Controls.Add(MakeLabel("Discord RPC", 10, true), 0, rpcRow);
         var discord = MakeButton(T("RPC settings", "RPC ayarları"), ConfigureDiscordPresence, 154, "discord");

@@ -55,8 +55,13 @@ public sealed partial class MainForm
         void Sample()
         {
             var counters = new ProcessMemoryCounters { Size = (uint)Marshal.SizeOf<ProcessMemoryCounters>() };
-            memoryMiB = K32GetProcessMemoryInfo(process.Handle, ref counters, counters.Size)
-                ? (double)counters.PrivateWorkingSet / 1048576d : null;
+            if (K32GetProcessMemoryInfo(process.Handle, ref counters, counters.Size) && counters.PrivateWorkingSet > 0)
+                memoryMiB = (double)counters.PrivateWorkingSet / 1048576d;
+            else
+            {
+                process.Refresh();
+                memoryMiB = process.WorkingSet64 / 1048576d;
+            }
             Invalidate();
         }
 

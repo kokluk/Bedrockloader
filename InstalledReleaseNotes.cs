@@ -29,7 +29,7 @@ public sealed partial class MainForm
 
         if (!upgraded) return;
         ShowThemedPopup(T($"What's new in {DisplayVersion}", $"{DisplayVersion} sürümündeki yenilikler"),
-            T("• Cinnabar has a dedicated WASM mods page.\n\n• Logs and available crash reports can be exported as a ZIP.\n\n• The optional RAM indicator is now visible on every page.",
-              "• Cinnabar için ayrı WASM modları sayfası eklendi.\n\n• Kayıtlar ve mevcut çökme raporları ZIP olarak dışa aktarılabiliyor.\n\n• İsteğe bağlı RAM göstergesi artık tüm sayfalarda görünüyor."));
+            T("• Discord shows Main Menu · Idle 🌙 on the launcher home screen. In Minecraft, it shows the version and local name when available.\n\n• The status area shows the selected theme.\n\n• The RAM badge uses an alternate measurement when Windows cannot report private resident memory.\n\n• Update notes follow the launcher language and can be scrolled.",
+              "• Discord, ana ekranda Ana Menü · Boşta 🌙 durumunu gösterir. Minecraft’ta varsa sürümü ve yerel adı gösterir.\n\n• Seçilen tema sol alttaki durum alanında görünür.\n\n• Windows özel bellek ölçümünü veremezse RAM göstergesi toplam fiziksel bellek kullanımını gösterir.\n\n• Güncelleme notları arayüz diline göre gösterilir ve kaydırılabilir."));
     }
 }

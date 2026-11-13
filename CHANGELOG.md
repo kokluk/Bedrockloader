@@ -1,14 +1,26 @@
-# Sıradaki sürüm / Next release
+# BedrockLoader v0.17.10
 
 ## Türkçe
 
-- Discord Rich Presence ana ekranda **Ana Menü · Boşta 🌙** durumunu gösterir.
-- Minecraft çalışırken etkinlikte **Minecraft** ve paylaşım açıksa doğrulanmış sürüm görünür. Yerel kullanıcı adı girilmişse ikinci satırda gösterilir. Oyun süresi mevcut paylaşım ayarına bağlıdır.
+**Discord Rich Presence**
+- Ana ekranda **Ana Menü · Boşta 🌙** gösterilir. Minecraft çalışırken paylaşım açıksa doğrulanmış sürüm, girilmişse yerel kullanıcı adı görünür.
+
+**Arayüz ve güncelleyici**
+- Seçilen tema sol alttaki durum alanında gösterilir.
+- RAM göstergesi açıkken Windows özel bellek kullanımını bildiremezse uygulamanın toplam fiziksel bellek kullanımını gösterir.
+- Güncelleme notları arayüz diline göre, bölümler halinde ve kaydırılabilir olarak gösterilir.
 
 ## English
 
-- Discord Rich Presence shows **Main Menu · Idle 🌙** on the launcher home screen.
-- While Minecraft is running, the activity shows **Minecraft** and its verified version when version sharing is enabled. The second line shows the local display name if configured. Elapsed time follows the existing sharing setting.
+**Discord Rich Presence**
+- The launcher home screen shows **Main Menu · Idle 🌙**. While Minecraft is running, Discord shows the verified version if sharing is enabled and the local display name if configured.
+
+**Interface and updater**
+- The status area shows the selected theme.
+- When enabled, the RAM badge falls back to the app’s total resident memory if Windows cannot report private resident memory.
+- Update notes follow the launcher language and are organized into scrollable sections.
+
+<!-- end-release-notes -->
 
 # BedrockLoader v0.17.9 — Yama notları
 

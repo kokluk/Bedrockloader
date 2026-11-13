@@ -10,7 +10,7 @@ async Task Reject(Func<Task> action, string name)
     try { await action(); } catch { passed++; Console.WriteLine("PASS " + name); return; }
     throw new Exception("Expected rejection: " + name);
 }
-string Json(string tag = "v0.17.10", string? digest = null, string? url = null, string? page = null, bool draft = false, bool prerelease = false, long size = 4) => JsonSerializer.Serialize(new
+string Json(string tag = "v0.17.11", string? digest = null, string? url = null, string? page = null, bool draft = false, bool prerelease = false, long size = 4) => JsonSerializer.Serialize(new
 {
     tag_name = tag, draft, prerelease, body = "Changes", html_url = page ?? "https://github.com/kokluk/Bedrockloader/releases/tag/" + tag,
     assets = new[] { new { name = $"BedrockLoader-Setup-v{tag.TrimStart('v')}-x64.exe", state = "uploaded", size,
@@ -23,8 +23,8 @@ Assert(ReleaseUpdates.LocalizeNotes(bilingualNotes, true) == "English notes", "E
 Assert(ReleaseUpdates.LocalizeNotes("Legacy notes", true) == "Legacy notes", "older release notes remain readable");
 Assert(ReleaseUpdates.LocalizeNotes("## Türkçe\n\nNotlar\n\n## English\n\n**Interface**\n- First change\n\n**Updates**\n- Second change", true)
     == "Interface\n• First change\n\nUpdates\n• Second change", "localized sections retain paragraph breaks");
-Assert(ReleaseUpdates.ParseVersion("v0.17.9") == ReleaseUpdates.CurrentVersion, "same version is not an update");
-Assert(ReleaseUpdates.ParseVersion("v0.17.10") > ReleaseUpdates.CurrentVersion, "newer version comparison");
+Assert(ReleaseUpdates.ParseVersion("v0.17.10") == ReleaseUpdates.CurrentVersion, "same version is not an update");
+Assert(ReleaseUpdates.ParseVersion("v0.17.11") > ReleaseUpdates.CurrentVersion, "newer version comparison");
 Assert(!ReleaseUpdates.ParseRelease(Json()).CanInstall, "missing hash blocks install");
 Assert(!ReleaseUpdates.ParseRelease(Json(digest: fakeDigest, url: "https://evil.example/setup.exe")).CanInstall, "external installer URL rejected");
 Assert(!ReleaseUpdates.ParseRelease(Json(digest: fakeDigest, url: "http://github.com/kokluk/Bedrockloader/releases/download/v0.14/setup.exe")).CanInstall, "HTTP installer URL rejected");
