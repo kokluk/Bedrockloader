@@ -6,6 +6,26 @@ BedrockLoader is a Windows launcher and content manager for **Minecraft Bedrock*
 
 [Windows x64 installer and release notes](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.9) · [Changelog (Turkish)](CHANGELOG.md)
 
+## App preview
+
+### Home
+
+Launch Minecraft, switch to Cinnabar, and access your installed mods and packs.
+
+![BedrockLoader home screen in English](docs/screenshots/home-en.png)
+
+### Skin manager and editor
+
+Preview skins in 3D, add them to favorites, and use **Edit** to open the editor.
+
+![3D character preview in the Skin Manager](docs/screenshots/skin-manager-en.png)
+
+### Themes
+
+Choose a preset theme or customize the interface with the Material You color palette.
+
+![Material You color palette in Settings](docs/screenshots/material-you-en.png)
+
 ## Installation
 
 1. Open the [v0.17.9 release](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.9).

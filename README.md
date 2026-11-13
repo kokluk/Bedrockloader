@@ -6,6 +6,26 @@ BedrockLoader, **Minecraft Bedrock** ve **Cinnabar** için bir Windows başlatı
 
 [Windows x64 kurulumu ve sürüm notları](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.9) · [Değişiklik geçmişi](CHANGELOG.md)
 
+## Uygulama önizlemesi
+
+### Ana ekran
+
+Minecraft’ı başlat, Cinnabar’a geç ve yüklü modlarla paketlere tek yerden eriş.
+
+![BedrockLoader Türkçe ana ekranı](docs/screenshots/home-tr.png)
+
+### Skin yöneticisi ve editör
+
+Skinleri 3B olarak önizle, favorilere ekle ve **Düzenle** düğmesiyle editörü aç.
+
+![Skin yöneticisinde 3B karakter önizlemesi](docs/screenshots/skin-manager-tr.png)
+
+### Temalar
+
+Hazır temalar arasından seçim yap veya Material You renk paletiyle arayüzü özelleştir.
+
+![Ayarlar ekranında açık tema menüsü](docs/screenshots/themes-tr.png)
+
 ## Kurulum
 
 1. [v0.17.9 sürüm sayfasını](https://github.com/kokluk/Bedrockloader/releases/tag/v0.17.9) aç.
