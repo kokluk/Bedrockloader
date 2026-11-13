@@ -1,3 +1,5 @@
+[Türkçe](README.md) | [English](README.en.md)
+
 # BedrockLoader
 
 BedrockLoader, **Minecraft Bedrock** ve **Cinnabar** için bir Windows başlatıcısı ve içerik yöneticisi. Ana ekrandan oyunlar arasında geçebilir, modlarını, paketlerini, skinlerini, dünyalarını ve sunucularını yönetebilirsin.
