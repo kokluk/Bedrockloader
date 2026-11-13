@@ -21,6 +21,8 @@ const string bilingualNotes = "## Türkçe\r\n\r\nTürkçe notlar\r\n\r\n## Engl
 Assert(ReleaseUpdates.LocalizeNotes(bilingualNotes, false) == "Türkçe notlar", "Turkish release notes selected");
 Assert(ReleaseUpdates.LocalizeNotes(bilingualNotes, true) == "English notes", "English release notes selected without checksum");
 Assert(ReleaseUpdates.LocalizeNotes("Legacy notes", true) == "Legacy notes", "older release notes remain readable");
+Assert(ReleaseUpdates.LocalizeNotes("## Türkçe\n\nNotlar\n\n## English\n\n**Interface**\n- First change\n\n**Updates**\n- Second change", true)
+    == "Interface\n• First change\n\nUpdates\n• Second change", "localized sections retain paragraph breaks");
 Assert(ReleaseUpdates.ParseVersion("v0.17.9") == ReleaseUpdates.CurrentVersion, "same version is not an update");
 Assert(ReleaseUpdates.ParseVersion("v0.17.10") > ReleaseUpdates.CurrentVersion, "newer version comparison");
 Assert(!ReleaseUpdates.ParseRelease(Json()).CanInstall, "missing hash blocks install");

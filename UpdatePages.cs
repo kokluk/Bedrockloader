@@ -58,10 +58,15 @@ public sealed partial class MainForm
         if (releaseNotes != null)
         {
             string notes = ReleaseUpdates.LocalizeNotes(availableRelease?.Notes ?? "", english);
-            releaseNotes.Text = string.IsNullOrWhiteSpace(notes)
+            string displayNotes = string.IsNullOrWhiteSpace(notes)
                 ? T("Release notes will appear here.", "Sürüm notları burada görünecek.")
-                : notes;
-            releaseNotes.ScrollBars = ScrollBars.None;
+                : notes.ReplaceLineEndings(Environment.NewLine);
+            if (releaseNotes.Text != displayNotes)
+            {
+                releaseNotes.Text = displayNotes;
+                releaseNotes.Select(0, 0);
+                releaseNotes.ScrollToCaret();
+            }
         }
     }
 

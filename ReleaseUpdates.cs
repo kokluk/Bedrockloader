@@ -34,7 +34,11 @@ internal static class ReleaseUpdates
         if (end >= 0) englishNotes = englishNotes[..end];
         englishNotes = englishNotes.Trim();
         string preferred = english ? englishNotes : turkishNotes;
-        return preferred.Length > 0 ? preferred : english ? turkishNotes : englishNotes;
+        string localized = preferred.Length > 0 ? preferred : english ? turkishNotes : englishNotes;
+        return string.Join("\n", localized.Split('\n').Select(line =>
+            line.StartsWith("**", StringComparison.Ordinal) && line.EndsWith("**", StringComparison.Ordinal) && line.Length > 4
+                ? line[2..^2]
+                : line.StartsWith("- ", StringComparison.Ordinal) ? "• " + line[2..] : line));
     }
 
     public static Version ParseVersion(string tag)
