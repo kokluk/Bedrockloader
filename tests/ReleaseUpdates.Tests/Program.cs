@@ -17,6 +17,10 @@ string Json(string tag = "v0.17.10", string? digest = null, string? url = null, 
         browser_download_url = url ?? "https://github.com/kokluk/Bedrockloader/releases/download/" + tag + "/setup.exe", digest } }
 });
 string fakeDigest = "sha256:" + new string('a', 64);
+const string bilingualNotes = "## Türkçe\r\n\r\nTürkçe notlar\r\n\r\n## English\r\n\r\nEnglish notes\r\n\r\n<!-- end-release-notes -->\r\n\r\nChecksum";
+Assert(ReleaseUpdates.LocalizeNotes(bilingualNotes, false) == "Türkçe notlar", "Turkish release notes selected");
+Assert(ReleaseUpdates.LocalizeNotes(bilingualNotes, true) == "English notes", "English release notes selected without checksum");
+Assert(ReleaseUpdates.LocalizeNotes("Legacy notes", true) == "Legacy notes", "older release notes remain readable");
 Assert(ReleaseUpdates.ParseVersion("v0.17.9") == ReleaseUpdates.CurrentVersion, "same version is not an update");
 Assert(ReleaseUpdates.ParseVersion("v0.17.10") > ReleaseUpdates.CurrentVersion, "newer version comparison");
 Assert(!ReleaseUpdates.ParseRelease(Json()).CanInstall, "missing hash blocks install");

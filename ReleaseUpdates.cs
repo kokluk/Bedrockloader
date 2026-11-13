@@ -18,6 +18,25 @@ internal static class ReleaseUpdates
     public const string LatestApi = "https://api.github.com/repos/kokluk/Bedrockloader/releases/latest";
     public const long MaxDownload = 300L * 1024 * 1024;
 
+    public static string LocalizeNotes(string notes, bool english)
+    {
+        const string turkishHeader = "## Türkçe\n";
+        const string englishHeader = "\n## English\n";
+        const string endMarker = "\n<!-- end-release-notes -->";
+        string text = notes.ReplaceLineEndings("\n").Trim();
+        if (!text.StartsWith(turkishHeader, StringComparison.Ordinal)) return notes;
+        int englishStart = text.IndexOf(englishHeader, turkishHeader.Length - 1, StringComparison.Ordinal);
+        if (englishStart < 0) return notes;
+
+        string turkishNotes = text[turkishHeader.Length..Math.Max(turkishHeader.Length, englishStart)].Trim();
+        string englishNotes = text[(englishStart + englishHeader.Length)..];
+        int end = englishNotes.IndexOf(endMarker, StringComparison.Ordinal);
+        if (end >= 0) englishNotes = englishNotes[..end];
+        englishNotes = englishNotes.Trim();
+        string preferred = english ? englishNotes : turkishNotes;
+        return preferred.Length > 0 ? preferred : english ? turkishNotes : englishNotes;
+    }
+
     public static Version ParseVersion(string tag)
     {
         if (!Version.TryParse(tag.Trim().TrimStart('v', 'V'), out var version) || version.Major < 0)
