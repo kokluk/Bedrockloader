@@ -41,37 +41,21 @@ public sealed partial class MainForm
         details.Dock = DockStyle.Top; details.Height = 34; details.TextAlign = ContentAlignment.MiddleCenter;
         var stage = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 20, Padding = new Padding(8), Tag = "card" };
         stage.Controls.Add(preview);
-        var layer = new SymbolButton { Symbol = "layers", AccessibleName = T("Layers", "Katmanlar"), Size = new Size(34, 34), Anchor = AnchorStyles.None };
+        var layer = MakeButton(T("Layers: On", "Katman: Açık"), () => { }, 142, "layers");
         var motion = MakeButton(T("Motion · Idle", "Hareket · Duruş"), () => { });
         motion.Dock = DockStyle.Fill; motion.Tag = "primary";
-        var motionBar = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 38, ColumnCount = 3, RowCount = 1, Tag = "card" };
+        var motionBar = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 38, ColumnCount = 2, RowCount = 1, Tag = "card" };
         motionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        motionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 43));
         motionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 43));
         motion.Margin = new Padding(0, 0, 6, 0);
         motionBar.Controls.Add(motion, 0, 0);
         stage.Controls.Add(motionBar);
         stage.Controls.Add(details);
         var trash = new SymbolButton { Symbol = "trash", Size = new Size(36, 36), Anchor = AnchorStyles.None, Margin = Padding.Empty, AccessibleName = T("Remove skin", "Skini kaldır") };
-        motionBar.Controls.Add(layer, 1, 0);
-        motionBar.Controls.Add(trash, 2, 0);
-        var layerMessage = new System.Windows.Forms.Timer { Interval = 2000 };
-        string motionText = motion.Text;
-        motion.Click += (_, _) =>
-        {
-            motionText = preview.NextMotion() switch
-            { 1 => T("Motion · Walk", "Hareket · Yürüme"), 2 => T("Motion · Run", "Hareket · Koşma"), _ => T("Motion · Idle", "Hareket · Duruş") };
-            if (!layerMessage.Enabled) motion.Text = motionText;
-        };
-        layer.Click += (_, _) =>
-        {
-            bool enabled = preview.ToggleLayers();
-            layerMessage.Stop();
-            layerMessage.Start();
-            motion.Text = enabled ? T("Layers: on", "Katman: açık") : T("Layers: off", "Katman: kapalı");
-        };
-        layerMessage.Tick += (_, _) => { layerMessage.Stop(); motion.Text = motionText; };
-        view.Disposed += (_, _) => layerMessage.Dispose();
+        motionBar.Controls.Add(trash, 1, 0);
+        motion.Click += (_, _) => motion.Text = preview.NextMotion() switch
+        { 1 => T("Motion · Walk", "Hareket · Yürüme"), 2 => T("Motion · Run", "Hareket · Koşma"), _ => T("Motion · Idle", "Hareket · Duruş") };
+        layer.Click += (_, _) => layer.Text = preview.ToggleLayers() ? T("Layers: On", "Katman: Açık") : T("Layers: Off", "Katman: Kapalı");
         right.Controls.Add(searchCard, 0, 0);
         right.Controls.Add(grid, 0, 1);
         view.Controls.Add(stage, 0, 1);
@@ -142,7 +126,7 @@ public sealed partial class MainForm
                 favoriteButton.Visible = entries.Count > 0 || detected.Count > 0;
                 favoriteButton.Enabled = skin is not null && entries.Contains(skin);
             }
-            layer.Visible = motionBar.Visible = details.Visible = skin is not null;
+            layer.Enabled = motionBar.Visible = details.Visible = skin is not null;
             trash.Enabled = skin is not null && entries.Contains(skin);
             preview.SetSkin(skin);
             details.Text = skin is null ? "" : skin.Name + "   •   " + (skin.Slim ? "Alex" : "Steve") + "   •   PNG";
@@ -213,6 +197,8 @@ public sealed partial class MainForm
             SendEntries(edited.Id);
         }, 130);
         buttons.Controls.SetChildIndex(favoriteButton, 2);
+        buttons.Controls.Add(layer);
+        buttons.Controls.SetChildIndex(layer, buttons.Controls.GetChildIndex(favoriteButton) + 1);
         trash.Click += (_, _) =>
         {
             if (Selected() is not { } skin || !entries.Contains(skin)) return;

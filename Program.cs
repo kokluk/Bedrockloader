@@ -23,6 +23,17 @@ internal static class Program
             return;
         }
         ApplicationConfiguration.Initialize();
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            if (e.ExceptionObject is not Exception error) return;
+            try
+            {
+                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BedrockLoader", "crashes");
+                Directory.CreateDirectory(folder);
+                File.WriteAllText(Path.Combine(folder, $"crash-{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Environment.ProcessId}.txt"), error.ToString());
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        };
         Application.SetDefaultFont(LauncherFont.Create(9));
         Application.Run(new MainForm());
     }

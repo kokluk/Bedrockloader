@@ -21,7 +21,7 @@ public sealed partial class MainForm
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44 * rows));
         grid.Controls.Add(BuildChoiceGrid(choices, columns), 0, 2);
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
         var footer = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
         var ok = MakeButton(accept, () => dialog.DialogResult = DialogResult.OK, 120);
         ok.Tag = "primary";
@@ -68,13 +68,13 @@ public sealed partial class MainForm
         var animation = MakeAnimationToggle(false);
         var advanced = MakeAnimationToggle(true);
         var sounds = MakeChoice(T("Click sound", "Tıklama sesi"), settings.ClickSounds);
-        var usage = MakeChoice(T("Show RAM and CPU", "RAM ve CPU’yu göster"), settings.ShowUsage);
+        var usage = MakeChoice(T("Show RAM usage", "RAM kullanımını göster"), settings.ShowUsage);
         var tray = MakeChoice(T("Minimize to system tray on close", "Kapatınca sistem tepsisine indir"), settings.CloseToTray);
         glow.AccessibleDescription = T("Highlights buttons as the pointer approaches.", "Fare yaklaşınca düğmeleri aydınlatır.");
         animation.AccessibleDescription = T("Animates presses and interface transitions.", "Düğme basışlarını ve arayüz geçişlerini hareketlendirir.");
         advanced.AccessibleDescription = T("Adds extra movement to icons.", "Simgelere ek hareket efektleri verir.");
         sounds.AccessibleDescription = T("Plays a short sound on clicks. Turning it on previews the sound.", "Tıklamalarda kısa bir ses çalar. Açtığında sesi hemen duyarsın.");
-        usage.AccessibleDescription = T("Shows the launcher's RAM and CPU usage on Home.", "Ana ekranda launcher’ın RAM ve CPU kullanımını gösterir.");
+        usage.AccessibleDescription = T("Shows the launcher's RAM usage in the header.", "Üst çubukta launcher’ın RAM kullanımını gösterir.");
         tray.AccessibleDescription = T("Keeps the launcher running in the system tray after closing.", "Kapatınca launcher’ı sistem tepsisinde çalışır durumda tutar.");
         sounds.PlaySoundOnClick = false;
         sounds.CheckedChanged += (_, _) => { if (sounds.Checked) PlayClickSample(); };
@@ -92,6 +92,7 @@ public sealed partial class MainForm
             AnimatedRoundButton.AdvancedAnimationsEnabled = settings.AdvancedAnimationsEnabled = advanced.Checked;
             settings.ClickSounds = sounds.Checked;
             settings.ShowUsage = usage.Checked;
+            if (usageBadge != null) usageBadge.Visible = settings.ShowUsage;
             settings.CloseToTray = tray.Checked;
         };
         return [glow, animation, advanced, sounds, usage, tray];

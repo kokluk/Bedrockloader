@@ -18,12 +18,11 @@ public sealed partial class MainForm
     }
 
     ITaskbarList3? taskbar;
-    bool minecraftTaskbarBusy;
 
     void RefreshDownloadTaskbar()
     {
         if (!IsHandleCreated || IsDisposed) return;
-        if (taskbar == null && cinnabarPercent < 0 && !minecraftTaskbarBusy) return;
+        if (taskbar == null && cinnabarPercent < 0) return;
         try
         {
             if (taskbar == null)
@@ -37,7 +36,7 @@ public sealed partial class MainForm
                 taskbar.SetProgressState(Handle, 2);
                 taskbar.SetProgressValue(Handle, (ulong)cinnabarPercent, 100);
             }
-            else taskbar.SetProgressState(Handle, minecraftTaskbarBusy ? 1u : 0u);
+            else taskbar.SetProgressState(Handle, 0);
         }
         catch (Exception ex) when (ex is COMException or InvalidCastException) { taskbar = null; }
     }

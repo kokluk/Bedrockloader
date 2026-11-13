@@ -30,8 +30,12 @@ public sealed partial class MainForm
             reveal.Tick += (_, _) =>
             {
                 double t = Math.Clamp(System.Diagnostics.Stopwatch.GetElapsedTime(openedAt).TotalMilliseconds / 190, 0, 1);
-                UpdateRegion(1 - Math.Pow(1 - t, 3));
-                if (t >= 1) reveal.Stop();
+                UpdateRegion(closing ? 1 - t : 1 - Math.Pow(1 - t, 3));
+                if (t >= 1)
+                {
+                    reveal.Stop();
+                    if (closing) Close();
+                }
             };
         }
 
@@ -42,7 +46,15 @@ public sealed partial class MainForm
         }
         readonly System.Windows.Forms.Timer reveal = new() { Interval = 15 };
         long openedAt;
+        bool closing;
+        Action? afterClose;
         public bool RevealFromBottom { get; init; }
+
+        public void SelectAndClose(Action action)
+        {
+            if (Visible) afterClose = action;
+            else action();
+        }
 
         protected override void OnOpened(EventArgs e)
         {
@@ -55,9 +67,24 @@ public sealed partial class MainForm
 
         protected override void OnClosed(ToolStripDropDownClosedEventArgs e)
         {
+            closing = false;
             reveal.Stop();
             UpdateRegion(1);
             base.OnClosed(e);
+            var action = afterClose;
+            afterClose = null;
+            action?.Invoke();
+        }
+
+        protected override void OnClosing(ToolStripDropDownClosingEventArgs e)
+        {
+            base.OnClosing(e);
+            if (e.Cancel || closing || AnimatedRoundButton.ReducedMotion ||
+                e.CloseReason is not (ToolStripDropDownCloseReason.ItemClicked or ToolStripDropDownCloseReason.CloseCalled or ToolStripDropDownCloseReason.Keyboard or ToolStripDropDownCloseReason.AppClicked)) return;
+            e.Cancel = true;
+            closing = true;
+            openedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+            reveal.Start();
         }
 
         protected override void OnSizeChanged(EventArgs e)
@@ -69,7 +96,7 @@ public sealed partial class MainForm
         void UpdateRegion(double amount)
         {
             if (Width < 2 || Height < 2) return;
-            int initialHeight = Math.Min(42, Height);
+            int initialHeight = Math.Min(closing ? 2 : 42, Height);
             int height = initialHeight + (int)Math.Round((Height - initialHeight) * amount);
             int width = Math.Max(2, (int)Math.Round(Width * (.92 + .08 * amount)));
             using var path = RoundedPath(new Rectangle((Width - width) / 2, RevealFromBottom ? Height - height : 0, width, height),
@@ -169,7 +196,7 @@ public sealed partial class MainForm
             {
                 int index = i;
                 var item = new ToolStripMenuItem(Items[i].ToString()) { AutoSize = false, Size = new Size(Math.Max(Width - 2, 120), 38), Checked = i == selectedIndex };
-                item.Click += (_, _) => { SelectedIndex = index; Focus(); };
+                item.Click += (_, _) => menu.SelectAndClose(() => { if (!IsDisposed) { Focus(); SelectedIndex = index; } });
                 menu.Items.Add(item);
             }
             // The selected header and options share one surface over the trigger.

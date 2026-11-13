@@ -106,7 +106,7 @@ public sealed partial class MainForm
         using var dialog = new RoundedPopupForm(Accent)
         {
             Text = "Discord Rich Presence", StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.None,
-            ClientSize = new Size(570, 365), AutoScaleMode = AutoScaleMode.Dpi, BackColor = Surface, ForeColor = TextColor,
+            ClientSize = new Size(570, 422), AutoScaleMode = AutoScaleMode.Dpi, BackColor = Surface, ForeColor = TextColor,
             ShowInTaskbar = false, MinimizeBox = false, MaximizeBox = false, Font = Font
         };
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 9, Padding = new Padding(20), AutoScroll = true };
@@ -114,6 +114,7 @@ public sealed partial class MainForm
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54));
         dialog.Controls.Add(layout);
+        using var tips = new ToolTip { InitialDelay = 350 };
         Span(new Label { Text = "Discord Rich Presence", Font = new Font(Font.FontFamily, 16, FontStyle.Bold), Dock = DockStyle.Fill }, 38);
         var enabled = Check(T("Enable Rich Presence", "Rich Presence’ı etkinleştir"), options.Enabled);
         var version = Check(T("Share Minecraft version", "Minecraft sürümünü paylaş"), options.ShowVersion);
@@ -145,7 +146,9 @@ public sealed partial class MainForm
         save.Tag = "primary";
         ApplyButtonPalette(save);
         ApplyButtonPalette(cancel);
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        tips.SetToolTip(cancel, T("Click to discard changes", "Değişiklikleri iptal etmek için tıkla"));
+        tips.SetToolTip(save, T("Click to save changes", "Değişiklikleri kaydetmek için tıkla"));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
         cancel.Anchor = save.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         cancel.Margin = new Padding(0, 0, 5, 0);
         save.Margin = new Padding(5, 0, 0, 0);
@@ -156,8 +159,9 @@ public sealed partial class MainForm
 
         CheckBox Check(string label, bool value)
         {
-            var box = new PopupToggle(Accent, SurfaceAlt) { Text = label, Checked = value };
-            Span(box, 25);
+            var box = new PopupToggle(Accent, SurfaceAlt) { Text = label, Checked = value, Cursor = Cursors.Hand };
+            tips.SetToolTip(box, T("Click to toggle", "Açmak veya kapatmak için tıkla"));
+            Span(box, 34);
             return box;
         }
         void AddRow(string label, Control control)

@@ -14,9 +14,6 @@ public sealed partial class MainForm
         readonly Process process = Process.GetCurrentProcess();
         readonly System.Windows.Forms.Timer timer = new() { Interval = 1000 };
         readonly Font badgeFont = new("Segoe UI", 9, FontStyle.Bold);
-        long previousSample;
-        TimeSpan previousCpu;
-        double? cpu;
         double? memoryMiB;
 
         [StructLayout(LayoutKind.Sequential)]
@@ -35,7 +32,7 @@ public sealed partial class MainForm
         public LauncherUsageBadge(MainForm owner)
         {
             this.owner = owner;
-            Size = new Size(228, 31);
+            Size = new Size(116, 31);
             AccessibleName = owner.T("BedrockLoader resource usage", "BedrockLoader kaynak kullanımı");
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
             timer.Tick += (_, _) => Sample();
@@ -52,23 +49,11 @@ public sealed partial class MainForm
             else
             {
                 timer.Stop();
-                previousSample = 0;
-                cpu = null;
             }
         }
 
         void Sample()
         {
-            long now = Stopwatch.GetTimestamp();
-            var total = process.TotalProcessorTime;
-            if (previousSample != 0)
-            {
-                var elapsed = Stopwatch.GetElapsedTime(previousSample, now).TotalSeconds;
-                if (elapsed >= .2)
-                    cpu = Math.Clamp(100 * (total - previousCpu).TotalSeconds / (elapsed * Environment.ProcessorCount), 0, 100);
-            }
-            previousSample = now;
-            previousCpu = total;
             var counters = new ProcessMemoryCounters { Size = (uint)Marshal.SizeOf<ProcessMemoryCounters>() };
             memoryMiB = K32GetProcessMemoryInfo(process.Handle, ref counters, counters.Size)
                 ? (double)counters.PrivateWorkingSet / 1048576d : null;
@@ -79,9 +64,8 @@ public sealed partial class MainForm
         {
             e.Graphics.Clear(Parent?.BackColor ?? owner.Surface);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            int pillWidth = Math.Max(1, (Width - 8) / 2);
+            int pillWidth = Math.Max(1, Width);
             DrawPill(0, memoryMiB.HasValue ? $"RAM {memoryMiB:0.0} MB" : "RAM …", memoryMiB ?? 0, 384, 768);
-            DrawPill(Width - pillWidth, cpu.HasValue ? $"CPU {cpu:0}%" : "CPU …", cpu ?? 0, 15, 35);
 
             void DrawPill(int x, string label, double value, double warning, double high)
             {

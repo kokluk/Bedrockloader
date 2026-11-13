@@ -70,8 +70,7 @@ public sealed partial class MainForm
     protected override async void OnShown(EventArgs e)
     {
         base.OnShown(e);
-        // One silent metadata check per application launch. Never downloads,
-        // starts setup, opens a page, or displays a prompt automatically.
+        ShowInstalledReleaseNotes();
         await CheckUpdatesAsync();
     }
 
@@ -97,9 +96,10 @@ public sealed partial class MainForm
     async void InstallUpdate()
     {
         if (updatesBusy || availableRelease is not { CanInstall: true } release || release.Version <= ReleaseUpdates.CurrentVersion) return;
-        if (MessageBox.Show(this, T($"Download and install {release.Tag}?\n\nSource: {release.Page}\n\nAfter verification, the setup wizard will open and BedrockLoader will close. Your mods and settings will be kept.",
+        if (ShowThemedPopup(T("Update approval", "Güncelleme onayı"),
+            T($"Download and install {release.Tag}?\n\nSource: {release.Page}\n\nAfter verification, the setup wizard will open and BedrockLoader will close. Your mods and settings will be kept.",
             $"{release.Tag} sürümü indirilip kurulsun mu?\n\nKaynak: {release.Page}\n\nDoğrulamadan sonra kurulum sihirbazı açılacak ve BedrockLoader kapanacak. Modların ve ayarların korunacak."),
-            T("Update approval", "Güncelleme onayı"), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+            true, T("Download and install", "İndir ve kur")) != DialogResult.Yes) return;
         updatesBusy = true;
         string? staged = null;
         try
@@ -123,7 +123,7 @@ public sealed partial class MainForm
             LogAction($"Started verified update installer: {release.Tag}", $"Doğrulanmış güncelleme yükleyicisi başlatıldı: {release.Tag}"); CloseToDesktop();
         }
         catch (OperationCanceledException) { if (!IsDisposed) UpdateFeedback("The download was canceled or timed out.", "İndirme iptal edildi veya zaman aşımına uğradı."); }
-        catch (Exception ex) { LogAction($"Update installation failed: {ex.Message}", $"Güncelleme kurulamadı: {ex.Message}"); if (!IsDisposed) { UpdateFeedback("The update could not be installed. You can try again.", "Güncelleme kurulamadı. Tekrar deneyebilirsin."); ShowError(ex, T("Update failed", "Güncelleme başarısız")); } }
+        catch (Exception ex) { LogAction($"Update installation failed: {ex.Message}", $"Güncelleme kurulamadı: {ex.Message}"); if (!IsDisposed) { UpdateFeedback("The update could not be installed. You can try again.", "Güncelleme kurulamadı. Tekrar deneyebilirsin."); ShowThemedPopup(T("Update failed", "Güncelleme başarısız"), ex.Message); } }
         finally
         {
             if (staged != null) { try { File.Delete(staged); } catch { } }

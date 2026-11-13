@@ -1,3 +1,27 @@
+# BedrockLoader v0.17.9 — Yama notları
+
+## v0.17.6
+- Güncellemeden sonraki ilk açılışta Yenilikler penceresi eklendi. Temiz kurulumda gösterilmez.
+- Güncelleme onayı ve hata pencereleri launcher temasına uyarlandı.
+
+## v0.17.7
+- Gelişmiş Ayarlar’a çift onaylı uygulama verilerini silme ve uygulamayı kaldırma seçenekleri eklendi.
+- Minecraft for Windows kurulumu Microsoft Store veya Xbox üzerinden yapılır. Launcher kurulum yönergesini ve mağaza bağlantısını gösterir.
+
+## v0.17.8
+- Cinnabar için ayrı Modlar kategorisi ve tıklanabilir ana ekran kartı eklendi. WASM dosyaları sürükle-bırak veya dosya seçiciyle eklenebilir, seçilen dosyalar Geri Dönüşüm Kutusu’na taşınabilir. Etkinleştirme ve izinler Cinnabar’dan yönetilir.
+- Özelleştirme ve Discord RPC pencerelerinde kontrol alanları genişletildi. Ayarlar düğmesine yazı eklendi, dil düğmesi soluna taşındı ve sürüm yazısı kalınlaştırıldı.
+- Parlama sol kategorilere uygulanmıyor. RAM göstergesi etkinleştirilirse tüm sayfalarda gösteriliyor. CPU göstergesi kaldırıldı.
+- Modlar filtresinde “Diğer dosyaları göster” kullanılıyor. Sunucu kaynakları için iki ayrı düğme var.
+- Skin katmanı anahtarı Favori’nin yanına taşındı. Skin seçili değilken devre dışı.
+- Tema ve dil menülerinde kapatma animasyonu eklendi. Metin kutuları seçili metnin sürüklenmesini destekliyor.
+- Kayıtlar ekranından launcher günlükleri ve mevcut Cinnabar hata raporları ZIP olarak dışa aktarılabiliyor.
+
+## v0.17.9
+- Tema ve dil menüleri seçim yapıldığında da kapanış animasyonu oynatıyor.
+- Discord RPC anahtarları ve işlem düğmeleri arasındaki boşluklar düzenlendi. Fare üzerine gelince işlem ipucu görünüyor.
+- Tema değişince sayfa simgeleri ve kaydırma çubuğu yeni vurgu rengiyle çiziliyor.
+
 # BedrockLoader v0.17.3
 
 Bu notlar v0.16.10’dan sonra, v0.16.11 ile v0.17.3 arasında gelen değişiklikleri kapsar.

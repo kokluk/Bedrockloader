@@ -10,9 +10,10 @@ public sealed partial class MainForm
     {
         AddPageHeading(T("Settings", "Ayarlar"), T("Choose the game path, language, and accent color.", "Oyun yolunu, dili ve vurgu rengini seç."));
         const int advancedRow = 4, separatorRow = 5, rpcRow = 6, backupRow = 7, settingsBackupRow = 8, fullBackupRow = 9, contentRow = 10, shortcutsRow = 11;
-        var layout = new RoundedSettingsList(this) { Height = 640, ColumnCount = 2, RowCount = 12, Padding = new Padding(16, 14, 16, 14), Tag = "settings-card" };
+        const int removalRow = shortcutsRow + 1;
+        var layout = new RoundedSettingsList(this) { Height = 640, ColumnCount = 2, RowCount = removalRow + 1, Padding = new Padding(16, 14, 16, 14), Tag = "settings-card" };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        int[] rowHeights = [52, 52, 0, 58, 56, 1, 58, 55, 52, 52, 62, 58];
+        int[] rowHeights = [52, 52, 0, 58, 56, 1, 58, 55, 52, 52, 62, 58, 104];
         foreach (int height in rowHeights)
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
         var advancedSeparator = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty, TabStop = false, Tag = "settings-card" };
@@ -98,7 +99,7 @@ public sealed partial class MainForm
             layout.SuspendLayout();
             paletteLabel.Visible = materialColors.Visible = visible;
             layout.RowStyles[2].Height = visible ? 100 : 0;
-            foreach (int row in Enumerable.Range(separatorRow, shortcutsRow - separatorRow + 1))
+            foreach (int row in Enumerable.Range(separatorRow, removalRow - separatorRow + 1))
             {
                 layout.RowStyles[row].Height = showAdvancedSettings ? rowHeights[row] : 0;
                 for (int column = 0; column < 2; column++)
@@ -129,6 +130,20 @@ public sealed partial class MainForm
         wizard.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         wizard.Margin = new Padding(0, 8, 3, 0);
         layout.Controls.Add(wizard, 1, shortcutsRow);
+        layout.Controls.Add(MakeLabel(T("Warning", "Uyarı"), 10, true), 0, removalRow);
+        var removal = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Tag = "settings-card", Margin = Padding.Empty };
+        removal.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        removal.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        var deleteData = MakeButton(T("Delete app data", "Uygulama verilerini sil"), DeleteLauncherData, icon: "trash");
+        var uninstall = MakeButton(T("Uninstall app", "Uygulamayı sil"), UninstallLauncher, icon: "trash");
+        foreach (var button in new[] { deleteData, uninstall })
+        {
+            button.Tag = "danger";
+            button.Dock = DockStyle.Fill;
+            button.Margin = new Padding(0, 5, 8, 5);
+            removal.Controls.Add(button);
+        }
+        layout.Controls.Add(removal, 1, removalRow);
         layout.Controls.Add(MakeLabel(T("Backups", "Yedekler"), 10, true), 0, backupRow);
         var backupCaption = MakeLabel(T("JSON contains settings and servers. Full ZIP backups can include selected worlds, skins, packs and mods.",
             "JSON, ayarları ve sunucuları içerir. Tam ZIP yedeğine seçtiğin dünyaları, skinleri, paketleri ve modları ekleyebilirsin."), 9);

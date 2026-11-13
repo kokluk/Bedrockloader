@@ -95,7 +95,8 @@ public sealed partial class MainForm
                 "resource-packs/global" => CountCinnabarResourcePacks(path),
                 _ => Directory.Exists(path) ? Directory.EnumerateFileSystemEntries(path).Count() : 0
             };
-            Action? activate = folder == "shaderpacks" ? () => ShowPage("Mods") :
+            if (folder == "mods") count = ListCinnabarMods(path).Count();
+            Action? activate = folder == "mods" ? () => ShowPage("CinnabarMods") : folder == "shaderpacks" ? () => ShowPage("Mods") :
                 Directory.Exists(path) ? () => OpenPath(path) : null;
             Counter(cinnabarCounts, column++, count, label, symbol, activate);
         }
@@ -166,6 +167,7 @@ public sealed partial class MainForm
                 if (!region.Contains(cursor)) continue;
                 if (child is AnimatedRoundButton button)
                 {
+                    if (button is NavIconButton) continue;
                     result.Add(button);
                     button.SetProximityShine(button.PointToClient(cursor), true);
                 }

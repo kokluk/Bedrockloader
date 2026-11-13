@@ -10,7 +10,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm : Form
 {
-    const string DisplayVersion = "v0.17.5";
+    const string DisplayVersion = "v0.17.9";
     SymbolButton? updateLauncher;
     static readonly HttpClient Http = CreateHttpClient();
     readonly string modsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Minecraft bedrock", "mods");
@@ -111,7 +111,7 @@ public sealed partial class MainForm : Form
     static HttpClient CreateHttpClient()
     {
         var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("BedrockLoader/0.17.5 (Windows; .NET 8)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("BedrockLoader/0.17.9 (Windows; .NET 8)");
         return http;
     }
 
@@ -133,10 +133,10 @@ public sealed partial class MainForm : Form
         logo.AccessibleName = T("Updates", "Güncellemeler");
         header.Controls.Add(logo);
         var brand = new Label { Text = "BedrockLoader", Font = LauncherFont.Create(12, FontStyle.Bold), AutoSize = true, Location = new Point(48, 11) };
-        var version = new Label { Text = DisplayVersion, Font = LauncherFont.Create(9), AutoSize = true, Location = new Point(49, 37) };
+        var version = new Label { Text = DisplayVersion, Font = LauncherFont.Create(9, FontStyle.Bold), AutoSize = true, Location = new Point(49, 37) };
         brand.MouseDown += Drag; version.MouseDown += Drag;
         header.Controls.Add(brand); header.Controls.Add(version);
-        var settingsButton = new SymbolButton { Symbol = "sliders", Width = 36, Height = 36, Tag = "icon", AccessibleName = T("Settings", "Ayarlar") };
+        var settingsButton = new SymbolButton { Symbol = "sliders", Text = T("Settings", "Ayarlar"), Width = 106, Height = 36, Tag = "icon", AccessibleName = T("Settings", "Ayarlar") };
         settingsButton.Click += (_, _) => ShowPage("Settings");
         var tips = new ToolTip(); tips.SetToolTip(settingsButton, T("Settings", "Ayarlar"));
         var traffic = new FlowLayoutPanel { Width = 108, Height = 36, Padding = new Padding(0, 3, 0, 0), FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Tag = "traffic", Margin = Padding.Empty };
@@ -153,9 +153,9 @@ public sealed partial class MainForm : Form
         var body = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(0, 20, 0, 20), Margin = Padding.Empty, Tag = "shell" };
         body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 210)); body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         root.Controls.Add(body, 0, 1);
-        var nav = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 11, AutoScroll = false, Margin = new Padding(0, 0, 12, 0), Padding = new Padding(1, 0, 1, 0), Tag = "shell" };
+        var nav = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 12, AutoScroll = false, Margin = new Padding(0, 0, 12, 0), Padding = new Padding(1, 0, 1, 0), Tag = "shell" };
         nav.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        for (int row = 0; row < 10; row++) nav.RowStyles.Add(new RowStyle(SizeType.Absolute, row is 1 or 7 or 9 ? 16 : 42));
+        for (int row = 0; row < 11; row++) nav.RowStyles.Add(new RowStyle(SizeType.Absolute, row is 1 or 8 or 10 ? 16 : 42));
         nav.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         body.Controls.Add(nav, 0, 0);
         AddNav(nav, "Home", "", T("Home", "Ana ekran"));
@@ -167,6 +167,7 @@ public sealed partial class MainForm : Form
         }
         Divider();
         AddNav(nav, "Mods", "", T("Mods", "Modlar"));
+        AddNav(nav, "CinnabarMods", "", T("Mods", "Modlar"));
         AddNav(nav, "Addons", "", T("Packs", "Packler")); AddNav(nav, "Skins", "", T("Skins", "Skinler")); AddNav(nav, "Worlds", "", T("Worlds", "Dünyalar")); AddNav(nav, "Servers", "", T("Servers", "Sunucular"));
         Divider();
         AddNav(nav, "About", "", T("About", "Hakkında"));
@@ -179,7 +180,7 @@ public sealed partial class MainForm : Form
         status.Dock = DockStyle.Fill; status.Font = LauncherFont.Create(8); status.TextAlign = ContentAlignment.MiddleLeft; status.Padding = Padding.Empty;
         footer.Controls.Add(status);
         usageBadge?.Dispose();
-        usageBadge = new LauncherUsageBadge(this) { Visible = currentPage == "Home" && settings.ShowUsage };
+        usageBadge = new LauncherUsageBadge(this) { Visible = settings.ShowUsage };
         header.Controls.Add(usageBadge);
         usageBadge.BringToFront();
         var logs = new SymbolButton { Symbol = "Logs", Text = T("Logs", "Kayıtlar"), Size = new Size(106, 36), Cursor = Cursors.Hand };
@@ -197,7 +198,7 @@ public sealed partial class MainForm : Form
         foreach (var (title, code) in new[] { ("Türkçe", "TR"), ("English", "EN") })
         {
             var item = new ToolStripMenuItem(title) { AutoSize = false, Size = new Size(166, 38), Checked = settings.Language == code };
-            item.Click += (_, _) => SetLanguage(code);
+            item.Click += (_, _) => languageMenu.SelectAndClose(() => SetLanguage(code));
             languageMenu.Items.Add(item);
         }
         var language = new SymbolButton { Symbol = "language", Width = 36, Height = 36, Tag = "icon", AccessibleName = T("Language", "Dil") };
@@ -222,7 +223,7 @@ public sealed partial class MainForm : Form
         void ArrangeHeaderActions()
         {
             traffic.Location = new Point(header.ClientSize.Width - traffic.Width, 13);
-            settingsButton.Location = new Point(traffic.Left - 42, 13);
+            settingsButton.Location = new Point(traffic.Left - settingsButton.Width - 6, 13);
             language.Location = new Point(settingsButton.Left - 42, 13);
             usageBadge.Location = new Point(Math.Max(0, language.Left - usageBadge.Width - 16), 16);
         }
@@ -331,7 +332,7 @@ public sealed partial class MainForm : Form
 
     TextBox MakeTextBox(string value = "")
     {
-        var input = new TextBox
+        var input = new DragTextBox
         {
             Text = value, BackColor = SurfaceAlt, ForeColor = TextColor,
             BorderStyle = BorderStyle.FixedSingle, Font = new Font(PreferredFontName(), 10)
@@ -387,12 +388,13 @@ public sealed partial class MainForm : Form
         {
             string navKey = (string)button.Tag!;
             ApplyNavigationColor(button, navKey == (key switch { "CurseForge" => "Addons", "CurseWorlds" => "Worlds", "CurseShaders" => "Mods", "CurseSkins" => "Skins", _ => key }));
-            button.Text = navKey == "Mods" && cinnabarMode ? T("Shaders", "Shaderlar") : NavText(navKey, "").Trim();
-            if (button is NavIconButton navIcon) navIcon.IconKey = navKey == "Mods" && cinnabarMode ? "sun" : navKey;
-            if (navKey is "Addons" or "Skins")
+            button.Text = navKey == "CinnabarMods" ? T("Mods", "Modlar") : navKey == "Mods" && cinnabarMode ? T("Shaders", "Shaderlar") : NavText(navKey, "").Trim();
+            if (button is NavIconButton navIcon) navIcon.IconKey = navKey == "CinnabarMods" ? "Mods" : navKey == "Mods" && cinnabarMode ? "sun" : navKey;
+            if (navKey is "Addons" or "Skins" or "CinnabarMods")
             {
-                button.Visible = !cinnabarMode;
-                if (button.Parent is TableLayoutPanel nav) nav.RowStyles[nav.GetRow(button)].Height = cinnabarMode ? 0 : 42;
+                bool visible = navKey == "CinnabarMods" ? cinnabarMode : !cinnabarMode;
+                button.Visible = visible;
+                if (button.Parent is TableLayoutPanel nav) nav.RowStyles[nav.GetRow(button)].Height = visible ? 42 : 0;
             }
         }
     }
@@ -415,7 +417,7 @@ public sealed partial class MainForm : Form
         currentPage = key;
         if (usageBadge is { IsDisposed: false })
         {
-            usageBadge.Visible = key == "Home" && settings.ShowUsage;
+            usageBadge.Visible = settings.ShowUsage;
         }
         // Paint only after native child controls have their final colors and bounds.
         contentHost.Visible = false;
@@ -428,6 +430,7 @@ public sealed partial class MainForm : Form
         {
             case "Home": BuildComfortableHome(); break;
             case "Mods": if (cinnabarMode) BuildCinnabarShaders(); else BuildModsPage(); break;
+            case "CinnabarMods": BuildCinnabarMods(); break;
             case "Addons": BuildSoftAddons(); break;
             case "Skins": BuildSkinPage(); break;
             case "Settings": BuildSettingsPage(); break;
@@ -475,6 +478,7 @@ public sealed partial class MainForm : Form
         {
             "Home" or "Addons" or "Skins" or "Worlds" or "Servers" or "Logs" => currentPage,
             "Mods" => cinnabarMode ? "sun" : "Mods",
+            "CinnabarMods" => "Mods",
             "Updates" => "update",
             "Settings" => "sliders",
             _ => null
@@ -537,7 +541,7 @@ public sealed partial class MainForm : Form
         var refresh = MakeButton(T("Refresh", "Yenile"), RefreshMods, 100); refresh.Height = 32; refresh.Font = LauncherFont.Create(9);
         buttons.Controls.Add(refresh);
         string OtherFilesLabel() => showOtherModFiles
-            ? T("Hide other files", "Diğer dosyaları gizle") : T("Show hidden files", "Gizli dosyaları göster");
+            ? T("Hide other files", "Diğer dosyaları gizle") : T("Show other files", "Diğer dosyaları göster");
         var otherFiles = MakeButton(OtherFilesLabel(), () =>
         {
             showOtherModFiles = !showOtherModFiles;
@@ -604,6 +608,13 @@ public sealed partial class MainForm : Form
     void BuildLogsPage()
     {
         AddPageHeading(T("Logs", "Kayıtlar"), T("Actions performed by BedrockLoader are recorded here.", "BedrockLoader ile yapılan işlemler burada kaydedilir."));
+        var heading = pageHeadingPanel!;
+        var export = MakeButton(T("Export logs", "Kayıtları dışa aktar"), ExportDiagnostics, 172, "download");
+        export.Height = 32;
+        heading.Controls.Add(export);
+        void PlaceExport() => export.Location = new Point(Math.Max(0, heading.ClientSize.Width - export.Width), 3);
+        heading.Resize += (_, _) => PlaceExport();
+        PlaceExport();
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Tag = "page", Margin = Padding.Empty };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -641,6 +652,7 @@ public sealed partial class MainForm : Form
         {
             lock (logLock)
             {
+                if (deletingLauncherData) return;
                 Directory.CreateDirectory(Path.GetDirectoryName(logFile)!);
                 var lines = File.Exists(logFile) ? File.ReadLines(logFile).TakeLast(MaxLogLines - 1).ToList() : [];
                 lines.Add($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {T(englishAction, turkishAction).ReplaceLineEndings(" ")}");
@@ -982,77 +994,32 @@ public sealed partial class MainForm : Form
     void LaunchGame()
     {
         if (backupBusy) return;
-        if (!MinecraftInstallation.IsInstalled(settings.ContentPath)) { _ = InstallMinecraftAsync(); return; }
+        if (!MinecraftInstallation.IsInstalled(settings.ContentPath)) { ShowMinecraftInstallPrompt(); return; }
         if (!MinecraftInstallation.TryLaunch(settings.ContentPath))
             ShowThemedPopup(T("Launch failed", "Oyun açılamadı"),
                 T("Minecraft for Windows could not be launched.", "Minecraft for Windows başlatılamadı."));
     }
 
     const string MinecraftStoreId = "9NBLGGH2JHXJ";
-    bool installingMinecraft;
-
-    async Task InstallMinecraftAsync()
+    void ShowMinecraftInstallPrompt()
     {
-        if (installingMinecraft) return;
-        installingMinecraft = true;
-        try
-        {
-            if (ShowThemedPopup(T("Install Minecraft", "Minecraft’ı yükle"),
-                T("Start installation through Microsoft Store using your Windows account?",
-                  "Windows hesabınla Microsoft Store üzerinden kurulum başlatılsın mı?"),
-                true, T("Install", "Yükle")) != DialogResult.Yes) return;
-
-            string winget = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps", "winget.exe");
-            var command = new ProcessStartInfo(winget) { UseShellExecute = false, CreateNoWindow = true };
-            foreach (string argument in new[] { "install", "--id", MinecraftStoreId, "--exact", "--source", "msstore", "--disable-interactivity" })
-                command.ArgumentList.Add(argument);
-
-            UpdateStatus(T("Microsoft Store installation in progress…", "Microsoft Store kurulumu sürüyor…"));
-            minecraftTaskbarBusy = true;
-            RefreshDownloadTaskbar();
-            if (minecraftLaunchButton is { IsDisposed: false } active) RefreshMinecraftButton(active);
-            int? exitCode = null;
-            try
-            {
-                using var process = Process.Start(command);
-                if (process != null)
-                {
-                    await process.WaitForExitAsync(updatesLifetime.Token);
-                    exitCode = process.ExitCode;
-                }
-            }
-            catch (System.ComponentModel.Win32Exception) { }
-
-            if (IsDisposed) return;
-            if (MinecraftInstallation.IsInstalled(settings.ContentPath))
-            {
-                if (minecraftLaunchButton is { IsDisposed: false } button)
-                    button.Text = T("Launch Minecraft", "Minecraft'ı başlat");
-                UpdateStatus(T("Minecraft is ready to launch.", "Minecraft başlatmaya hazır."));
-                return;
-            }
-
-            LogAction($"Minecraft Store installation was not detected (WinGet exit: {exitCode?.ToString() ?? "unavailable"}).", $"Microsoft Store Minecraft kurulumu bulunamadı (WinGet çıkış kodu: {exitCode?.ToString() ?? "bilinmiyor"}).");
-            UpdateStatus(T("Minecraft installation could not be verified.", "Minecraft kurulumu doğrulanamadı."));
-            if (ShowThemedPopup(T("Continue in Microsoft Store", "Microsoft Store’da devam et"),
-                T("Installation could not be completed in the launcher. Open the Store to check your account and install Minecraft.",
-                  "Kurulum launcher’da tamamlanamadı. Hesabını kontrol etmek ve Minecraft’ı yüklemek için Store’u aç."),
-                true, T("Open Store", "Store’u aç")) == DialogResult.Yes)
-                OpenXboxMinecraftPage();
-        }
-        catch (OperationCanceledException) { }
-        finally
-        {
-            installingMinecraft = false;
-            minecraftTaskbarBusy = false;
-            RefreshDownloadTaskbar();
-            if (minecraftLaunchButton is { IsDisposed: false } button) RefreshMinecraftButton(button);
-        }
+        if (ShowThemedPopup(T("Install Minecraft", "Minecraft’ı yükle"),
+            T("Install Minecraft for Windows from Microsoft Store or the Xbox app. Return to BedrockLoader after installation.",
+              "Minecraft for Windows’u Microsoft Store veya Xbox uygulamasından indirip yüklemen gerekiyor. Kurulum tamamlanınca BedrockLoader’a dön."),
+            true, T("Open Microsoft Store", "Microsoft Store’u aç")) == DialogResult.Yes)
+            OpenXboxMinecraftPage();
     }
-
     void OpenXboxMinecraftPage()
     {
-        try { Process.Start(new ProcessStartInfo { FileName = "ms-windows-store://pdp/?productid=" + MinecraftStoreId, UseShellExecute = true }); LogAction("Opened Microsoft Store product page", "Microsoft Store ürün sayfası açıldı"); } catch { OpenUrl("ms-windows-store://pdp/?productid=" + MinecraftStoreId); }
+        try
+        {
+            using var store = Process.Start(new ProcessStartInfo("ms-windows-store://pdp/?productid=" + MinecraftStoreId)
+            { UseShellExecute = true });
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            OpenUrl("https://www.xbox.com/games/store/minecraft-for-windows/" + MinecraftStoreId);
+        }
     }
 
     void ApplyThemePalette()
@@ -1101,7 +1068,7 @@ public sealed partial class MainForm : Form
             button.ForeColor = ReadableText(swatch.SwatchColor);
             return;
         }
-        if (button.Text.Contains("Delete checked", StringComparison.OrdinalIgnoreCase) || button.Text.Contains("Seçilenleri sil", StringComparison.OrdinalIgnoreCase))
+        if (Equals(button.Tag, "danger") || button.Text.Contains("Delete checked", StringComparison.OrdinalIgnoreCase) || button.Text.Contains("Seçilenleri sil", StringComparison.OrdinalIgnoreCase))
         {
             button.BackColor = Color.FromArgb(220, 55, 65);
             button.ForeColor = Color.White;
@@ -1174,6 +1141,7 @@ public sealed partial class MainForm : Form
         BackColor = Bg; ForeColor = TextColor;
         ApplyDwmTheme();
         RecolorTree(this);
+        contentHost.Invalidate(true);
         languageMenu.BackColor = SurfaceAlt; languageMenu.ForeColor = TextColor;
         foreach (var b in navButtons)
         {
@@ -1379,6 +1347,7 @@ public sealed partial class MainForm : Form
     {
         public List<SavedServer> Servers { get; set; } = [];
         public bool IntroSeen { get; set; }
+        public string LastRunVersion { get; set; } = "";
         public bool CloseToTray { get; set; } = true;
         public bool TrayNoticeShown { get; set; }
         public bool ShinyHomeIcons { get; set; } = true;

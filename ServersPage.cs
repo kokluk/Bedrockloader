@@ -26,9 +26,11 @@ public sealed partial class MainForm
         page.Disposed += (_, _) => { lifetime.Cancel(); lifetime.Dispose(); };
         bool minecraft = false;
         var minecraftTab = MakeButton(T("Minecraft servers", "Minecraft sunucuları"), () => { }, 165);
-        minecraftTab.Click += (_, _) => SelectSource(!minecraft);
-        if (!cinnabarMode) toolbar.Controls.Add(minecraftTab);
-        else page.Disposed += (_, _) => minecraftTab.Dispose();
+        var savedTab = MakeButton(T("Saved servers", "Kayıtlı sunucular"), () => { }, 146);
+        minecraftTab.Click += (_, _) => SelectSource(true);
+        savedTab.Click += (_, _) => SelectSource(false);
+        if (!cinnabarMode) toolbar.Controls.AddRange([minecraftTab, savedTab]);
+        else page.Disposed += (_, _) => { minecraftTab.Dispose(); savedTab.Dispose(); };
         toolbar.Controls.Add(MakeButton(T("Add server", "Sunucu ekle"), () => EditLocal(null), 128));
         toolbar.Controls.Add(MakeButton(T("Refresh", "Yenile"), () => _ = RefreshAsync(), 94));
         grid.Resize += (_, _) => ResizeCards();
@@ -38,7 +40,8 @@ public sealed partial class MainForm
         {
             minecraft = value;
             minecraftTab.Tag = value ? "primary" : null;
-            minecraftTab.Text = value ? T("Back to saved servers", "Kayıtlı sunuculara dön") : T("Minecraft servers", "Minecraft sunucuları");
+            savedTab.Tag = value ? null : "primary";
+            ApplyButtonPalette(savedTab);
             ApplyButtonPalette(minecraftTab);
             _ = RefreshAsync();
         }

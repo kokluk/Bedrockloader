@@ -2,7 +2,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm
 {
-    DialogResult ShowThemedPopup(string title, string message, bool confirmation = false, string? confirmLabel = null)
+    DialogResult ShowThemedPopup(string title, string message, bool confirmation = false, string? confirmLabel = null, bool destructive = false)
     {
         using var popup = new RoundedPopupForm(Accent)
         {
@@ -42,8 +42,9 @@ public sealed partial class MainForm
         popup.CancelButton = cancel;
         if (confirmation)
         {
-            var accept = MakeButton(confirmLabel ?? T("Allow installation", "Kuruluma izin ver"), () => popup.DialogResult = DialogResult.Yes);
-            accept.Tag = "primary"; accept.Dock = DockStyle.Fill; accept.Margin = new Padding(6, 0, 0, 0);
+            var accept = MakeButton(confirmLabel ?? T("Allow installation", "Kuruluma izin ver"), () => popup.DialogResult = DialogResult.Yes,
+                icon: destructive ? "trash" : null);
+            accept.Tag = destructive ? "danger" : "primary"; accept.Dock = DockStyle.Fill; accept.Margin = new Padding(6, 0, 0, 0);
             ApplyButtonPalette(accept); actions.Controls.Add(accept, 1, 0);
         }
         // Enter defaults to cancellation; Escape also dismisses without approval.

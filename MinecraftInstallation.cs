@@ -24,8 +24,7 @@ public sealed partial class MainForm
 
     void RefreshMinecraftButton(Button button)
     {
-        button.Enabled = !installingMinecraft;
-        button.Text = installingMinecraft ? T("Installing Minecraft…", "Minecraft yükleniyor…") : MinecraftInstallation.IsInstalled(settings.ContentPath)
+        button.Text = MinecraftInstallation.IsInstalled(settings.ContentPath)
             ? T("Launch Minecraft", "Minecraft'ı başlat") : T("Install Minecraft", "Minecraft'ı yükle");
     }
 }
