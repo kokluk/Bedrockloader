@@ -11,15 +11,21 @@ public sealed partial class MainForm
             StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.None, ShowInTaskbar = false
         };
         var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, Padding = new Padding(14, 7, 14, 7) };
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
         var heading = WrappedText(title, 15, true);
         heading.Dock = DockStyle.Fill;
-        var header = new Panel { Dock = DockStyle.Fill };
+        heading.Padding = new Padding(0, 0, 44, 0);
+        var header = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
         header.Controls.Add(heading);
         var close = MakeShortcutClose(dialog);
+        close.Dock = DockStyle.None;
+        close.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        void PlaceClose() => close.Location = new Point(Math.Max(0, header.ClientSize.Width - close.Width), 2);
+        header.Resize += (_, _) => PlaceClose();
         header.Controls.Add(close);
         close.BringToFront();
+        PlaceClose();
         grid.Controls.Add(header, 0, 0);
         grid.Controls.Add(WrappedText(description), 0, 1);
         grid.GetControlFromPosition(0, 1)!.Dock = DockStyle.Fill;

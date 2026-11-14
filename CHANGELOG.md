@@ -1,3 +1,19 @@
+# BedrockLoader v0.17.14
+
+## Türkçe
+
+- Özelleştirme ve yedek seçim pencerelerindeki kırmızı kapatma düğmesinin yuvarlak görünümü düzeltildi.
+- Kurulum klasörleri ve kurulum sihirbazı düğmeleri eşit boyuta getirildi ve sağa hizalandı.
+- Kaynak kodu Core, Features, Services ve UI klasörlerinde düzenlendi.
+
+## English
+
+- Fixed the circular red close button in Customization and backup selection dialogs.
+- Made the installation folder and setup wizard buttons equal in size and right-aligned.
+- Organized the source code into Core, Features, Services, and UI.
+
+<!-- end-release-notes -->
+
 # BedrockLoader v0.17.13
 
 ## Türkçe

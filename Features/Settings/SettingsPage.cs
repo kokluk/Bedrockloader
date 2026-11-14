@@ -93,17 +93,14 @@ public sealed partial class MainForm
             UpdateStatus(T($"Theme: {settings.Theme}", $"Tema: {settings.Theme}"));
         };
         layout.Controls.Add(MakeLabel(T("Folder shortcuts", "Klasör kısayolları"), 10, true), 0, rpcRow);
-        var integrations = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Tag = "settings-card" };
-        integrations.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        integrations.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         var discord = MakeButton("Discord RPC", ConfigureDiscordPresence, icon: "discord");
-        var paths = MakeButton(T("Installation folders", "Kurulum klasörleri"), ShowInstallationFolders, icon: "Addons");
-        discord.Dock = paths.Dock = DockStyle.Fill;
+        const int shortcutWidth = 275;
+        var paths = MakeButton(T("Installation folders", "Kurulum klasörleri"), ShowInstallationFolders, shortcutWidth, "Addons");
+        discord.Dock = DockStyle.Fill;
         discord.Margin = new Padding(0, 7, 6, 7);
-        paths.Margin = new Padding(6, 7, 0, 7);
-
-        integrations.Controls.Add(paths, 1, 0);
-        layout.Controls.Add(integrations, 1, rpcRow);
+        paths.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        paths.Margin = new Padding(0, 8, 3, 0);
+        layout.Controls.Add(paths, 1, rpcRow);
         layout.Controls.Add(MakeLabel(T("Customization", "Özelleştirme"), 10, true), 0, 3);
         var customize = MakeButton(T("Customization settings", "Özelleştirme ayarları"), ShowCustomization, 205, "sliders");
         customize.Anchor = AnchorStyles.Right | AnchorStyles.Top;
@@ -117,7 +114,7 @@ public sealed partial class MainForm
         customizationActions.Controls.Add(customize, 1, 0);
         layout.Controls.Add(customizationActions, 1, 3);
         layout.Controls.Add(MakeLabel(T("Shortcuts", "Kısayollar"), 10, true), 0, shortcutsRow);
-        var wizard = MakeButton(T("Show setup wizard", "Kurulum sihirbazını tekrar göster"), ShowSetupWizard, 275, "settings");
+        var wizard = MakeButton(T("Show setup wizard", "Kurulum sihirbazını tekrar göster"), ShowSetupWizard, shortcutWidth, "settings");
         wizard.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         wizard.Margin = new Padding(0, 8, 3, 0);
         layout.Controls.Add(wizard, 1, shortcutsRow);
