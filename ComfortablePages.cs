@@ -48,6 +48,18 @@ public sealed partial class MainForm
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 110));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         var hero = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 22, Padding = new Padding(18), Margin = new Padding(0, 0, 0, 14) };
+        hero.Paint += (_, e) =>
+        {
+            if (!cinnabarMode || cinnabarPercent < 0) return;
+            int width = Math.Max(0, hero.ClientSize.Width - 36);
+            if (width == 0) return;
+            using var track = new Pen(MixColors(SurfaceAlt, TextColor, .18), 3) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+            using var fill = new Pen(Accent, 3) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+            int y = hero.ClientSize.Height - 8;
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.DrawLine(track, 18, y, 18 + width, y);
+            if (cinnabarPercent > 0) e.Graphics.DrawLine(fill, 18, y, 18 + width * Math.Clamp(cinnabarPercent, 0, 100) / 100, y);
+        };
         bool installed = MinecraftInstallation.IsInstalled(settings.ContentPath);
         var launch = MakeButton(cinnabarMode ? CinnabarLaunchText() : installed ? T("Launch Minecraft", "Minecraft'ı başlat") : T("Install Minecraft", "Minecraft'ı yükle"), () => { if (cinnabarMode) _ = LaunchCinnabarAsync(); else LaunchGame(); }, icon: "play");
         launch.Tag = "minecraft-launch";
@@ -75,7 +87,7 @@ public sealed partial class MainForm
         }
         Counter(counts, 0, mods, T("Mods", "Modlar"), "Mods", () => ShowPage("Mods"));
         Counter(counts, 1, resources, T("Resource packs", "Kaynak paketleri"), "Addons", () => ShowPage("Addons"));
-        Counter(counts, 2, behaviors, T("Behavior packs", "Davranış paketleri"), "settings", () => ShowPage("Addons"));
+        Counter(counts, 2, behaviors, T("Behavior packs", "Davranış paketleri"), "behavior", () => ShowPage("Addons"));
         var countHost = new Panel { Dock = DockStyle.Fill, Tag = "page", Margin = Padding.Empty };
         countHost.Controls.Add(counts);
         var cinnabarCounts = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Tag = "page", Margin = Padding.Empty };
@@ -124,6 +136,11 @@ public sealed partial class MainForm
         foreach (var shortcut in new[] { installModloader, compare, explain, cinnabarUpdates, play }) shortcut.MonochromeIcon = true;
         cinnabarPlayButton = play;
         shortcuts.Controls.Add(play);
+        var channel = BuildCinnabarChannelSelector();
+        var installedChannel = MakeLabel("");
+        cinnabarChannelLabel = installedChannel;
+        shortcuts.Controls.Add(channel);
+        shortcuts.Controls.Add(installedChannel);
         layout.Controls.Add(shortcuts, 0, 2);
         page.Controls.Add(layout);
         contentHost.Controls.Add(page);
@@ -141,7 +158,8 @@ public sealed partial class MainForm
                 RefreshMinecraftButton(launch);
             }
             minecraftLaunchButton = cinnabarMode ? null : launch;
-            cinnabarUpdates.Visible = cinnabarMode;
+            cinnabarUpdates.Visible = channel.Visible = installedChannel.Visible = cinnabarMode;
+            if (cinnabarMode) installedChannel.Text = CinnabarChannelDescription();
             counts.Visible = !cinnabarMode;
             cinnabarCounts.Visible = cinnabarMode;
             installModloader.Visible = !cinnabarMode;

@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Version>0.17.12</Version>
+    <Version>0.17.13</Version>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../BedrockLoader/ReleaseUpdates.cs" Link="ReleaseUpdates.cs" />
+    <Compile Include="../../ReleaseUpdates.cs" Link="ReleaseUpdates.cs" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 param(
-    [string]$SetupPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'installer-output\BedrockLoader-Setup-v0.17.12-x64.exe')
+    [string]$SetupPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'installer-output\BedrockLoader-Setup-v0.17.13-x64.exe')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,7 +21,7 @@ try {
     if ($setupProcess.ExitCode -ne 0) { throw "Install failed: $($setupProcess.ExitCode)" }
     $installed = $true
 
-    $payloadPath = (Resolve-Path -LiteralPath (Join-Path $workspacePath 'installer-payload-v0.17.12')).Path
+    $payloadPath = (Resolve-Path -LiteralPath (Join-Path $workspacePath 'installer-payload-v0.17.13')).Path
     foreach ($source in Get-ChildItem -LiteralPath $payloadPath -File -Recurse) {
         if ($source.Extension -eq '.pdb') { continue }
         $relative = $source.FullName.Substring($payloadPath.Length).TrimStart('\')

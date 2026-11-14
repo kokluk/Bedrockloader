@@ -4,8 +4,9 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm
 {
-    static string CinnabarDataRoot()
+    string CinnabarDataRoot()
     {
+        if (settings.CinnabarNightly) return Path.Combine(CinnabarNightlyUserRoot, "data");
         var configured = Environment.GetEnvironmentVariable("CINNABAR_USER_ROOT");
         if (configured != null && Path.IsPathFullyQualified(configured))
             return Path.Combine(configured, "data");
@@ -23,7 +24,8 @@ public sealed partial class MainForm
         AddPageHeading(T("Shaders", "Shaderlar"),
             T("Install compatible Java shader packs and select them in Cinnabar.", "Uyumlu Java shader paketlerini kur ve Cinnabar içinden seç."));
         AddCurseForgeHeadingButton("CurseShaders");
-        var layout = new BufferedActionLayout { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, Tag = "page" };
+        var layout = new BufferedActionLayout { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, Tag = "page" };
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 130));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
@@ -36,14 +38,14 @@ public sealed partial class MainForm
         card.Controls.Add(title);
         var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, Tag = "page" };
         var folder = Path.Combine(CinnabarDataRoot(), "shaderpacks");
-        actions.Controls.Add(MakeButton(T("Open shader folder", "Shader klasörünü aç"), () =>
+        actions.Controls.Add(MakeButton(T("Open folder", "Klasörü aç"), () =>
         {
             if (Directory.Exists(folder)) OpenUrl(folder);
         }, 170));
         var delete = MakeButton(T("Delete checked", "Seçilenleri sil"), () => { }, 160, icon: "trash");
-        var reveal = new AnimatedActionReveal(delete, 38, 8, height => layout.RowStyles[2].Height = height)
+        var reveal = new AnimatedActionReveal(delete, 38, 8, height => layout.RowStyles[3].Height = height)
             { Dock = DockStyle.Fill, BackColor = Surface, Tag = "page" };
-        layout.Controls.Add(reveal, 0, 2);
+        layout.Controls.Add(reveal, 0, 3);
         delete.Click += (_, _) => Delete();
         actions.Controls.Add(MakeButton(T("Refresh", "Yenile"), Refresh));
         entries.ItemCheck += (_, e) =>
@@ -51,10 +53,40 @@ public sealed partial class MainForm
             int checkedCount = entries.CheckedItems.Count + (e.NewValue == CheckState.Checked ? 1 : -1);
             reveal.SetShown(checkedCount > 0);
         };
-        layout.Controls.Add(card, 0, 0);
-        layout.Controls.Add(actions, 0, 1);
+        var drop = BuildCinnabarDropArea(T("Drop shader packs here", "Shader paketlerini buraya bırak"),
+            T("Choose or drop compatible Java shader ZIPs.", "Uyumlu Java shader ZIP dosyalarını seç veya buraya bırak."),
+            "ZIP (*.zip)|*.zip", IsZip, Import);
+        layout.Controls.Add(drop, 0, 0);
+        layout.Controls.Add(card, 0, 1);
+        layout.Controls.Add(actions, 0, 2);
         contentHost.Controls.Add(layout);
         Refresh();
+
+        static bool IsZip(string path) => File.Exists(path) && Path.GetExtension(path).Equals(".zip", StringComparison.OrdinalIgnoreCase);
+        void Import(string[] files)
+        {
+            var errors = new List<string>();
+            foreach (string file in files.Where(IsZip))
+            {
+                string? temp = null;
+                try
+                {
+                    temp = Path.GetTempFileName();
+                    File.Copy(file, temp, overwrite: true);
+                    InstallCinnabarShader(temp, Path.GetFileName(file));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+                { errors.Add(Path.GetFileName(file) + " · " + ex.Message); }
+                finally
+                {
+                    if (temp != null)
+                        try { File.Delete(temp); }
+                        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                }
+            }
+            Refresh();
+            if (errors.Count > 0) ShowThemedPopup(T("Shader import", "Shader içe aktarma"), string.Join("\n", errors));
+        }
 
         void Refresh()
         {
@@ -96,7 +128,7 @@ public sealed partial class MainForm
         }
     }
 
-    static void InstallCinnabarShader(string staged, string name)
+    void InstallCinnabarShader(string staged, string name)
     {
         using (var archive = ZipFile.OpenRead(staged))
         {

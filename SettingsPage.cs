@@ -9,11 +9,32 @@ public sealed partial class MainForm
     void BuildSettingsPage()
     {
         AddPageHeading(T("Settings", "Ayarlar"), T("Choose the game path, language, and accent color.", "Oyun yolunu, dili ve vurgu rengini seç."));
-        const int advancedRow = 4, separatorRow = 5, rpcRow = 6, backupRow = 7, settingsBackupRow = 8, fullBackupRow = 9, contentRow = 10, shortcutsRow = 11;
+        var heading = pageHeadingPanel!;
+        var light = new SymbolButton { Symbol = lightMode ? "sun" : "moon", Size = new Size(36, 36),
+            Tag = "icon", Cursor = Cursors.Hand, AccessibleName = T("Toggle light / dark mode", "Gece / gündüz modunu değiştir") };
+        void PositionLight() => light.Location = new Point(Math.Max(0, heading.ClientSize.Width - light.Width - 4), 3);
+        heading.Resize += (_, _) => PositionLight();
+        PositionLight();
+        heading.Controls.Add(light);
+        light.BringToFront();
+        var themeTip = new ToolTip();
+        themeTip.SetToolTip(light, light.AccessibleName);
+        light.Disposed += (_, _) => themeTip.Dispose();
+        light.Click += (_, _) =>
+        {
+            lightMode = !lightMode;
+            settings.LightMode = lightMode;
+            settings.FollowWindowsTheme = false;
+            SaveSettings();
+            light.Symbol = lightMode ? "sun" : "moon";
+            ApplyTheme();
+            light.Invalidate();
+        };
+        const int advancedRow = 4, separatorRow = 5, rpcRow = 6, shortcutsRow = 7;
         const int removalRow = shortcutsRow + 1;
         var layout = new RoundedSettingsList(this) { Height = 640, ColumnCount = 2, RowCount = removalRow + 1, Padding = new Padding(16, 14, 16, 14), Tag = "settings-card" };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        int[] rowHeights = [52, 52, 0, 58, 56, 1, 58, 55, 52, 52, 62, 58, 104];
+        int[] rowHeights = [52, 52, 0, 58, 56, 1, 58, 58, 104];
         foreach (int height in rowHeights)
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
         var advancedSeparator = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty, TabStop = false, Tag = "settings-card" };
@@ -24,51 +45,6 @@ public sealed partial class MainForm
         };
         layout.Controls.Add(advancedSeparator, 0, separatorRow);
         layout.SetColumnSpan(advancedSeparator, 2);
-
-        layout.Controls.Add(MakeLabel(cinnabarMode ? T("Cinnabar folder", "Cinnabar klasörü") : T("Content folder", "Content klasörü"), 10, true), 0, contentRow);
-        var pathRow = new TableLayoutPanel { Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right, Height = 40, Tag = "settings-card", ColumnCount = cinnabarMode ? 2 : 3, RowCount = 1, Margin = new Padding(0, 8, 0, 8) };
-        pathRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); pathRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 88));
-        if (!cinnabarMode) pathRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 76));
-        pathRow.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        string? cinnabarPath = cinnabarMode ? Path.GetDirectoryName(FindCinnabar()) : null;
-        var path = MakeTextBox(cinnabarMode ? cinnabarPath ?? "" : settings.ContentPath); path.BorderStyle = BorderStyle.None;
-        path.ReadOnly = cinnabarMode;
-        path.PlaceholderText = cinnabarMode ? T("Cinnabar is not installed", "Cinnabar kurulu değil") : "";
-        var pathSurface = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 16, Tag = "card", Margin = new Padding(0, 0, 8, 0) };
-        pathSurface.Controls.Add(path);
-        void AlignPath() { path.SetBounds(12, Math.Max(0, (pathSurface.ClientSize.Height - path.Height) / 2), Math.Max(1, pathSurface.ClientSize.Width - 24), path.Height); }
-        pathSurface.Resize += (_, _) => AlignPath(); AlignPath();
-        pathRow.Controls.Add(pathSurface, 0, 0);
-        var browse = MakeButton(cinnabarMode ? T("Open folder", "Klasörü aç") : T("Browse", "Gözat"), () =>
-        {
-            if (cinnabarMode) { if (cinnabarPath != null) OpenPath(cinnabarPath); return; }
-            using var d = new FolderBrowserDialog { Description = T("Select the Minecraft Content folder", "Minecraft Content klasörünü seç"),
-                SelectedPath = Directory.Exists(path.Text) ? path.Text : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) };
-            if (d.ShowDialog(this) == DialogResult.OK) path.Text = d.SelectedPath;
-        }, 100);
-        browse.Enabled = !cinnabarMode || cinnabarPath != null;
-        browse.Dock = DockStyle.Fill; browse.Margin = Padding.Empty; pathRow.Controls.Add(browse, 1, 0);
-        if (!cinnabarMode)
-        {
-            var savePath = MakeButton(T("Save", "Kaydet"), () =>
-            {
-                string selected = path.Text.Trim().Trim('"');
-                if (!Path.IsPathFullyQualified(selected) || !Directory.Exists(selected))
-                {
-                    ShowThemedPopup(T("Content folder", "Content klasörü"),
-                        T("Choose an existing folder.", "Var olan bir klasör seç."));
-                    return;
-                }
-                settings.ContentPath = selected;
-                SaveSettings();
-                RefreshDiscordOptions();
-                UpdateStatus(T("Content folder saved.", "Content klasörü kaydedildi."));
-            }, 94);
-            savePath.Dock = DockStyle.Fill;
-            savePath.Margin = new Padding(6, 0, 0, 0);
-            pathRow.Controls.Add(savePath, 2, 0);
-        }
-        layout.Controls.Add(pathRow, 1, contentRow);
 
         layout.Controls.Add(MakeLabel(T("Language", "Dil"), 10, true), 0, 0);
         var lang = MakeThemeCombo(250); lang.Margin = new Padding(0, 3, 8, 8);
@@ -116,16 +92,30 @@ public sealed partial class MainForm
             RefreshSettingsRows(); SaveSettings(); ApplyTheme();
             UpdateStatus(T($"Theme: {settings.Theme}", $"Tema: {settings.Theme}"));
         };
-        layout.Controls.Add(MakeLabel("Discord RPC", 10, true), 0, rpcRow);
-        var discord = MakeButton(T("RPC settings", "RPC ayarları"), ConfigureDiscordPresence, 154, "discord");
-        discord.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-        discord.Margin = new Padding(0, 6, 0, 0);
-        layout.Controls.Add(discord, 1, rpcRow);
+        layout.Controls.Add(MakeLabel(T("Folder shortcuts", "Klasör kısayolları"), 10, true), 0, rpcRow);
+        var integrations = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Tag = "settings-card" };
+        integrations.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        integrations.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        var discord = MakeButton("Discord RPC", ConfigureDiscordPresence, icon: "discord");
+        var paths = MakeButton(T("Installation folders", "Kurulum klasörleri"), ShowInstallationFolders, icon: "Addons");
+        discord.Dock = paths.Dock = DockStyle.Fill;
+        discord.Margin = new Padding(0, 7, 6, 7);
+        paths.Margin = new Padding(6, 7, 0, 7);
+
+        integrations.Controls.Add(paths, 1, 0);
+        layout.Controls.Add(integrations, 1, rpcRow);
         layout.Controls.Add(MakeLabel(T("Customization", "Özelleştirme"), 10, true), 0, 3);
         var customize = MakeButton(T("Customization settings", "Özelleştirme ayarları"), ShowCustomization, 205, "sliders");
         customize.Anchor = AnchorStyles.Right | AnchorStyles.Top;
         customize.Margin = new Padding(0, 9, 3, 0);
-        layout.Controls.Add(customize, 1, 3);
+        var customizationActions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Tag = "settings-card" };
+        customizationActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+        customizationActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
+        customize.Dock = DockStyle.Fill;
+        customize.Margin = new Padding(6, 7, 0, 7);
+        customizationActions.Controls.Add(discord, 0, 0);
+        customizationActions.Controls.Add(customize, 1, 0);
+        layout.Controls.Add(customizationActions, 1, 3);
         layout.Controls.Add(MakeLabel(T("Shortcuts", "Kısayollar"), 10, true), 0, shortcutsRow);
         var wizard = MakeButton(T("Show setup wizard", "Kurulum sihirbazını tekrar göster"), ShowSetupWizard, 275, "settings");
         wizard.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -145,25 +135,6 @@ public sealed partial class MainForm
             removal.Controls.Add(button);
         }
         layout.Controls.Add(removal, 1, removalRow);
-        layout.Controls.Add(MakeLabel(T("Backups", "Yedekler"), 10, true), 0, backupRow);
-        var backupCaption = MakeLabel(T("JSON contains settings and servers. Full ZIP backups can include selected worlds, skins, packs and mods.",
-            "JSON, ayarları ve sunucuları içerir. Tam ZIP yedeğine seçtiğin dünyaları, skinleri, paketleri ve modları ekleyebilirsin."), 9);
-        backupCaption.Dock = DockStyle.Fill; backupCaption.AutoSize = false;
-        layout.Controls.Add(backupCaption, 1, backupRow);
-        AddBackupRow(settingsBackupRow, false);
-        AddBackupRow(fullBackupRow, true);
-        void AddBackupRow(int row, bool full)
-        {
-            var pair = new TableLayoutPanel { Tag = "settings-card", Dock = DockStyle.Fill, ColumnCount = 2, Margin = new Padding(0, 0, 0, 8) };
-            pair.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            pair.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            var export = MakeButton(full ? T("Export full backup", "Tam yedeği dışa aktar") : T("Export settings", "Ayarları dışa aktar"), () => _ = ExportBackupAsync(full));
-            var import = MakeButton(full ? T("Restore full backup", "Tam yedeği içe aktar") : T("Import settings", "Ayarları içe aktar"), () => _ = ImportBackupAsync(full));
-            export.Dock = import.Dock = DockStyle.Fill;
-            pair.Controls.Add(export, 0, 0);
-            pair.Controls.Add(import, 1, 0);
-            layout.Controls.Add(pair, 1, row);
-        }
         foreach (Control label in layout.Controls)
             if (label is Label) { label.Anchor = AnchorStyles.Top | AnchorStyles.Left; label.Margin = new Padding(12, 10, 8, 0); }
         RefreshSettingsRows();

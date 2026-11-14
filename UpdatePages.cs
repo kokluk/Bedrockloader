@@ -25,7 +25,7 @@ public sealed partial class MainForm
         updateMessage = WrappedText(T(updateMessageEn, updateMessageTr)); updateMessage.Dock = DockStyle.Fill;
         releaseNotes = new ScrollTextBox { Dock = DockStyle.Fill, Font = LauncherFont.Create(10) };
         var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, Tag = "card", Padding = new Padding(0, 10, 0, 0), Margin = Padding.Empty };
-        checkUpdateButton = MakeButton(T("Check for updates", "Güncellemeleri denetle"), CheckUpdates, 185);
+        checkUpdateButton = MakeButton(T("Check for updates", "Güncellemeleri denetle"), CheckUpdates, 185, "update");
         checkUpdateButton.Tag = "card-button";
         installUpdateButton = MakeButton(T("Download and install", "İndir ve kur"), InstallUpdate, 185); installUpdateButton.Tag = "primary";
         actions.Controls.Add(checkUpdateButton); actions.Controls.Add(installUpdateButton);
@@ -79,6 +79,15 @@ public sealed partial class MainForm
         base.OnShown(e);
         ShowInstalledReleaseNotes();
         await CheckUpdatesAsync();
+        if (IsDisposed || !Visible || availableRelease is not { } release || !ReleaseUpdates.ShouldNotify(release)) return;
+        string notes = ReleaseUpdates.LocalizeNotes(release.Notes, english);
+        string message = T($"{release.Tag} is available.", $"{release.Tag} güncellemesi var.");
+        if (!string.IsNullOrWhiteSpace(notes)) message += "\n\n" + notes;
+        if (ShowThemedPopup(T("Update available", "Güncelleme var"), message, true,
+            release.CanInstall ? T("Download and install", "İndir ve kur") : T("View release", "Sürümü aç"),
+            cancelLabel: T("Later", "Daha sonra")) != DialogResult.Yes) return;
+        if (release.CanInstall) InstallUpdateCore(approved: true);
+        else OpenUrl(release.Page.AbsoluteUri);
     }
 
     async Task CheckUpdatesAsync()
@@ -100,10 +109,12 @@ public sealed partial class MainForm
         finally { updatesBusy = false; RenderUpdateState(); }
     }
 
-    async void InstallUpdate()
+    void InstallUpdate() => InstallUpdateCore(approved: false);
+
+    async void InstallUpdateCore(bool approved)
     {
         if (updatesBusy || availableRelease is not { CanInstall: true } release || release.Version <= ReleaseUpdates.CurrentVersion) return;
-        if (ShowThemedPopup(T("Update approval", "Güncelleme onayı"),
+        if (!approved && ShowThemedPopup(T("Update approval", "Güncelleme onayı"),
             T($"Download and install {release.Tag}?\n\nSource: {release.Page}\n\nAfter verification, the setup wizard will open and BedrockLoader will close. Your mods and settings will be kept.",
             $"{release.Tag} sürümü indirilip kurulsun mu?\n\nKaynak: {release.Page}\n\nDoğrulamadan sonra kurulum sihirbazı açılacak ve BedrockLoader kapanacak. Modların ve ayarların korunacak."),
             true, T("Download and install", "İndir ve kur")) != DialogResult.Yes) return;

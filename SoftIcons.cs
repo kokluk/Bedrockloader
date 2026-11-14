@@ -106,6 +106,31 @@ internal static class SoftIcons
                         graphics.FillPath(fill, p); graphics.DrawPath(pen, p);
                     }
                     break;
+                case "eraser":
+                    using (var eraser = new GraphicsPath())
+                    {
+                        eraser.AddPolygon([new PointF(3, 14), new PointF(12, 5), new PointF(20, 13),
+                            new PointF(13, 20), new PointF(9, 20)]);
+                        graphics.DrawPath(pen, eraser);
+                    }
+                    Line(8, 10, 16, 17);
+                    Line(13, 20, 21, 20);
+                    break;
+                case "image-overlay":
+                    Shape(Round(7, 4, 14, 13, 3));
+                    Line(3, 8, 3, 18); Line(3, 18, 6, 21); Line(6, 21, 17, 21);
+                    Line(10, 13, 13, 10); Line(13, 10, 17, 14);
+                    break;
+                case "backup":
+                    Shape(Round(3, 11, 18, 10, 3));
+                    Line(12, 3, 12, 15); Line(8, 11, 12, 15); Line(16, 11, 12, 15);
+                    Line(7, 18, 9, 18);
+                    break;
+                case "behavior":
+                    Shape(Round(3, 4, 18, 16, 4));
+                    Line(9, 9, 6, 12); Line(6, 12, 9, 15);
+                    Line(15, 9, 18, 12); Line(18, 12, 15, 15);
+                    break;
                 case "Addons":
                     Shape(Round(4, 8, 16, 12, 3));
                     Shape(Round(3, 4, 18, 5, 2));

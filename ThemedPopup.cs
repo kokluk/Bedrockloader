@@ -2,7 +2,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm
 {
-    DialogResult ShowThemedPopup(string title, string message, bool confirmation = false, string? confirmLabel = null, bool destructive = false)
+    DialogResult ShowThemedPopup(string title, string message, bool confirmation = false, string? confirmLabel = null, bool destructive = false, string? cancelLabel = null)
     {
         using var popup = new RoundedPopupForm(Accent)
         {
@@ -36,7 +36,7 @@ public sealed partial class MainForm
         var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = confirmation ? 2 : 1, RowCount = 1, Margin = Padding.Empty, Padding = new Padding(0, 14, 0, 6), BackColor = Surface };
         actions.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         for (int i = 0; i < actions.ColumnCount; i++) actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / actions.ColumnCount));
-        var cancel = MakeButton(confirmation ? T("Cancel", "Vazgeç") : (confirmLabel ?? T("OK", "Tamam")), () => popup.DialogResult = confirmation ? DialogResult.No : DialogResult.OK);
+        var cancel = MakeButton(confirmation ? (cancelLabel ?? T("Cancel", "Vazgeç")) : (confirmLabel ?? T("OK", "Tamam")), () => popup.DialogResult = confirmation ? DialogResult.No : DialogResult.OK);
         cancel.Dock = DockStyle.Fill; cancel.Margin = new Padding(0, 0, confirmation ? 6 : 0, 0);
         ApplyButtonPalette(cancel); actions.Controls.Add(cancel, 0, 0);
         popup.CancelButton = cancel;

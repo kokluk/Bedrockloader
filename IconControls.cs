@@ -136,8 +136,15 @@ public sealed partial class MainForm
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.Clear(BackColor);
-            SoftIcons.Draw(e.Graphics, "status", new RectangleF(Padding.Left, (Height - 17) / 2f, 17, 17), IconColor, true);
-            TextRenderer.DrawText(e.Graphics, Text, Font, new Rectangle(Padding.Left + 24, 0, Math.Max(0, Width - 24 - Padding.Horizontal), Height), ForeColor,
+            int width = Math.Min(Math.Max(0, Width - Padding.Right), TextRenderer.MeasureText(Text, Font).Width + 44);
+            if (width < 42 || Height < 10) return;
+            int height = Math.Min(32, Height);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using var pill = SoftIcons.Round(0, (Height - height) / 2f, width, height, height / 2f);
+            using var fill = new SolidBrush(MixColors(BackColor, IconColor, .12));
+            e.Graphics.FillPath(fill, pill);
+            SoftIcons.Draw(e.Graphics, "status", new RectangleF(9, (Height - 17) / 2f, 17, 17), IconColor, true);
+            TextRenderer.DrawText(e.Graphics, Text, Font, new Rectangle(33, 0, width - 41, Height), ForeColor,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
         }
     }

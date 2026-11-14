@@ -156,11 +156,11 @@ public sealed partial class MainForm
         var nameCard = new RoundedPanel { Width = 138, Height = 36, CornerRadius = 16, BackColor = SurfaceAlt, Padding = new Padding(10, 8, 10, 0) };
         nameCard.Controls.Add(name);
         bool slim = skin.Slim;
-        var model = MakeButton(slim ? "Alex" : "Steve", () => { }, 66);
+        var model = MakeButton(slim ? "Alex" : "Steve", () => { }, 84, "Skins");
         model.Click += (_, _) => { slim = !slim; model.Text = slim ? "Alex" : "Steve"; };
         ApplyButtonPalette(model);
         bool erasing = false;
-        var erase = MakeButton(T("Eraser", "Silgi"), () => { }, 78);
+        var erase = MakeButton(T("Eraser", "Silgi"), () => { }, 91, "eraser");
         void SetEraser(bool value)
         {
             erasing = value;
@@ -205,7 +205,7 @@ public sealed partial class MainForm
         palette.Controls.Add(wheel);
         palette.Controls.Add(hex);
         palette.Controls.Add(colorPreview);
-        var save = MakeButton(T("Save", "Kaydet"), () => dialog.DialogResult = DialogResult.OK, 90);
+        var save = MakeButton(T("Save", "Kaydet"), () => dialog.DialogResult = DialogResult.OK, 96, "check-mark");
         save.Tag = "primary";
         ApplyButtonPalette(save);
         var header = new Panel { Dock = DockStyle.Top, Height = 49, BackColor = Surface };
@@ -217,14 +217,14 @@ public sealed partial class MainForm
         closeHost.Controls.Add(close);
         header.Controls.Add(nameCard);
         header.Controls.Add(closeHost);
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 53, Padding = new Padding(0, 8, 0, 0), WrapContents = false };
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(0, 8, 0, 0), WrapContents = true };
         close.Click += (_, _) => dialog.DialogResult = DialogResult.Cancel;
         var canvas = new PictureBox { Dock = DockStyle.Fill, BackColor = SurfaceAlt, Margin = Padding.Empty };
-        var overlay = MakeButton(T("Overlay PNG", "Bindir"), OverlayPng, 100);
+        var overlay = MakeButton(T("Overlay PNG", "Bindir"), OverlayPng, 136, "image-overlay");
         ApplyButtonPalette(overlay);
         bool showLayers = true;
         using var layerStatus = new System.Windows.Forms.Timer { Interval = 2000 };
-        var layerButton = MakeButton(T("Layers", "Katman"), () => { }, 145, "layers");
+        var layerButton = MakeButton(T("Layers", "Katman"), () => { }, 166, "layers");
         ApplyButtonPalette(layerButton);
         layerButton.Click += (_, _) =>
         {
@@ -237,11 +237,15 @@ public sealed partial class MainForm
         bar.Controls.AddRange([model, erase, overlay, layerButton]);
         var footer = new Panel { Dock = DockStyle.Bottom, Height = 53 };
         save.Dock = DockStyle.Right;
-        var saveHost = new Panel { Dock = DockStyle.Right, Width = 96, Padding = new Padding(0, 8, 0, 8) };
+        var saveHost = new Panel { Dock = DockStyle.Right, Width = 104, Padding = new Padding(0, 8, 0, 8) };
         saveHost.Controls.Add(save);
         bar.Dock = DockStyle.Fill;
         footer.Controls.Add(bar);
         footer.Controls.Add(saveHost);
+        void FitFooter() => footer.Height = bar.Controls.Cast<Control>().Sum(control => control.Width + control.Margin.Horizontal)
+            <= footer.ClientSize.Width - saveHost.Width ? 53 : 99;
+        footer.Resize += (_, _) => FitFooter();
+        FitFooter();
         dialog.CancelButton = close;
         Rectangle Area()
         {

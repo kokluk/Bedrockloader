@@ -110,10 +110,10 @@ public sealed partial class MainForm
         using var dialog = new RoundedPopupForm(Accent)
         {
             Text = "Discord Rich Presence", StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.None,
-            ClientSize = new Size(570, 422), AutoScaleMode = AutoScaleMode.Dpi, BackColor = Surface, ForeColor = TextColor,
+            ClientSize = new Size(570, 252), AutoScaleMode = AutoScaleMode.Dpi, BackColor = Surface, ForeColor = TextColor,
             ShowInTaskbar = false, MinimizeBox = false, MaximizeBox = false, Font = Font
         };
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 9, Padding = new Padding(20), AutoScroll = true };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 5, Padding = new Padding(20), AutoScroll = true };
         int row = 0;
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54));
@@ -123,26 +123,10 @@ public sealed partial class MainForm
         var enabled = Check(T("Enable Rich Presence", "Rich Presence’ı etkinleştir"), options.Enabled);
         var version = Check(T("Share Minecraft version", "Minecraft sürümünü paylaş"), options.ShowVersion);
         var time = Check(T("Share elapsed time", "Oyun süresini paylaş"), options.ShowTime);
-        var id = Field(T("Discord Application ID", "Discord uygulama kimliği"), string.IsNullOrWhiteSpace(options.ApplicationId) ? DefaultDiscordApplicationId : options.ApplicationId, 20);
-        var large = Field(T("Large image key", "Büyük görsel anahtarı"), options.LargeImage, 64);
-        var small = Field(T("Small image key", "Küçük görsel anahtarı"), options.SmallImage, 64);
-        var hint = new Label { ForeColor = lightMode ? Color.DarkRed : Color.LightSalmon };
-        Span(hint, 25);
-        id.TextChanged += (_, _) => hint.Text = "";
-        var cancel = MakeButton(T("Cancel", "Vazgeç"), () => dialog.DialogResult = DialogResult.Cancel);
+        var cancel = MakeButton(T("Back", "Geri"), () => dialog.DialogResult = DialogResult.Cancel);
         var save = MakeButton(T("Save", "Kaydet"), () =>
         {
-            string appId = id.Text.Trim();
-            if (appId.Length > 0 && !ValidDiscordId(appId))
-            {
-                hint.Text = T("Enter a numeric Discord Application ID.", "Sayısal bir Discord uygulama kimliği gir.");
-                return;
-            }
-            settings.Discord = new DiscordOptions
-            {
-                Enabled = enabled.Checked, ShowVersion = version.Checked, ShowTime = time.Checked,
-                ApplicationId = appId, LargeImage = large.Text.Trim(), SmallImage = small.Text.Trim()
-            };
+            settings.Discord = options with { Enabled = enabled.Checked, ShowVersion = version.Checked, ShowTime = time.Checked };
             SaveSettings();
             RefreshDiscordOptions();
             dialog.DialogResult = DialogResult.OK;
@@ -159,6 +143,13 @@ public sealed partial class MainForm
         layout.Controls.Add(cancel, 0, row); layout.Controls.Add(save, 1, row);
         dialog.CancelButton = cancel;
         dialog.AcceptButton = save;
+        var close = MakeShortcutClose(dialog);
+        close.Dock = DockStyle.None;
+        close.Size = new Size(34, 34);
+        close.Location = new Point(dialog.ClientSize.Width - 48, 14);
+        close.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        dialog.Controls.Add(close);
+        close.BringToFront();
         dialog.ShowDialog(this);
 
         CheckBox Check(string label, bool value)
@@ -168,29 +159,12 @@ public sealed partial class MainForm
             Span(box, 34);
             return box;
         }
-        void AddRow(string label, Control control)
-        {
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
-            layout.Controls.Add(new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left }, 0, row);
-            control.Dock = DockStyle.Fill;
-            control.Margin = new Padding(2, 1, 2, 2);
-            layout.Controls.Add(control, 1, row++);
-        }
         void Span(Control control, int height)
         {
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             control.Dock = DockStyle.Fill;
             layout.Controls.Add(control, 0, row++);
             layout.SetColumnSpan(control, 2);
-        }
-        TextBox Field(string label, string value, int length)
-        {
-            var input = MakeTextBox();
-            input.Text = value;
-            input.MaxLength = length;
-            input.AccessibleName = label;
-            AddRow(label, WrapPopupInput(input));
-            return input;
         }
     }
 

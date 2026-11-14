@@ -86,10 +86,10 @@ public sealed partial class MainForm
         BuildShellRefresh();
     }
 
-    async Task ExportBackupAsync(bool full)
+    async Task ExportBackupAsync(bool full, Action? back = null)
     {
         if (backupBusy) return;
-        if (ChooseBackupParts(full, importing: false) is not { } parts) return;
+        if (ChooseBackupParts(full, importing: false, back) is not { } parts) return;
         if ((parts & ~SmallBackup) != 0 && !BackupGamesClosed())
         {
             ShowThemedPopup(T("Export full backup", "Tam yedeği dışa aktar"),
@@ -162,10 +162,10 @@ public sealed partial class MainForm
         WorldRoots().Select(Path.GetDirectoryName).OfType<string>().Prepend(ResolveComMojangRoot())
             .Distinct(StringComparer.OrdinalIgnoreCase).Where(Directory.Exists);
 
-    async Task ImportBackupAsync(bool full)
+    async Task ImportBackupAsync(bool full, Action? back = null)
     {
         if (backupBusy) return;
-        if (ChooseBackupParts(full, importing: true) is not { } parts) return;
+        if (ChooseBackupParts(full, importing: true, back) is not { } parts) return;
         using var picker = new OpenFileDialog { Filter = full ? "ZIP (*.zip)|*.zip" : "JSON (*.json)|*.json" };
         if (picker.ShowDialog(this) != DialogResult.OK) return;
         string sourceFile = picker.FileName;

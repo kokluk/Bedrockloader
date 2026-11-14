@@ -18,29 +18,16 @@ public sealed partial class MainForm
         string root = CinnabarDataRoot();
         string folder = Path.Combine(root, "mods");
         var page = new BufferedActionLayout { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4 };
-        page.RowStyles.Add(new RowStyle(SizeType.Absolute, 88));
+        page.RowStyles.Add(new RowStyle(SizeType.Absolute, 130));
         page.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         page.RowStyles.Add(new RowStyle(SizeType.Absolute, 45));
         page.RowStyles.Add(new RowStyle(SizeType.Absolute, 0));
-        var drop = new RoundedPanel { Dock = DockStyle.Fill, Padding = new Padding(12), CornerRadius = 18, AllowDrop = true };
-        var add = MakeButton(T("Choose WASM files or drop them here", "WASM dosyası seç veya buraya bırak"), () => { }, icon: "download");
         var list = new SpacedCheckedListBox { Dock = DockStyle.Fill, BorderStyle = BorderStyle.None, CheckOnClick = true, IntegralHeight = false };
         var remove = MakeButton(T("Delete checked", "Seçilenleri sil"), () => { }, 166, "trash");
         var reveal = new AnimatedActionReveal(remove, 38, 8, height => page.RowStyles[3].Height = height) { Dock = DockStyle.Fill };
-        add.Click += (_, _) =>
-        {
-            using var picker = new OpenFileDialog { Filter = "WebAssembly (*.wasm)|*.wasm", Multiselect = true };
-            if (picker.ShowDialog(this) == DialogResult.OK) Import(picker.FileNames);
-        };
-        add.Dock = DockStyle.Fill;
-        add.AllowDrop = true;
-        foreach (var target in new Control[] { drop, add })
-        {
-            target.DragEnter += (_, e) => e.Effect = e.Data?.GetData(DataFormats.FileDrop) is string[] paths && paths.Any(IsCinnabarMod)
-                ? DragDropEffects.Copy : DragDropEffects.None;
-            target.DragDrop += (_, e) => { if (e.Data?.GetData(DataFormats.FileDrop) is string[] paths) Import(paths); };
-        }
-        drop.Controls.Add(add);
+        var drop = BuildCinnabarDropArea(T("Drop mod files here", "Mod dosyalarını buraya bırak"),
+            T("Choose or drop Cinnabar .wasm mod files.", "Cinnabar .wasm mod dosyalarını seç veya buraya bırak."),
+            "WebAssembly (*.wasm)|*.wasm", IsCinnabarMod, Import);
         var tools = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
         tools.Controls.Add(MakeButton(T("Refresh", "Yenile"), Refresh));
         tools.Controls.Add(MakeButton(T("Official mod", "Resmî mod"), () => OpenUrl("https://cinnabar.gg/mod/"), 142, "external"));
@@ -65,7 +52,9 @@ public sealed partial class MainForm
             Refresh();
         };
         page.Controls.Add(drop, 0, 0);
-        page.Controls.Add(list, 0, 1);
+        var listCard = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 20, Padding = new Padding(12), Tag = "card" };
+        listCard.Controls.Add(list);
+        page.Controls.Add(listCard, 0, 1);
         page.Controls.Add(tools, 0, 2);
         page.Controls.Add(reveal, 0, 3);
         contentHost.Controls.Add(page);

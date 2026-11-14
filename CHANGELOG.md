@@ -1,3 +1,31 @@
+# BedrockLoader v0.17.13
+
+## Türkçe
+
+**Cinnabar**
+- Kararlı ve Gecelik kanallar ayrı kurulumlar kullanır. Gecelik için ayrı oyun verisi ve ilk geçişte deneysel sürüm uyarısı eklendi.
+- İndirme ilerleme çizgisi, yuvarlak mod listesi ve shader ZIP sürükle-bırak desteği eklendi.
+
+**Arayüz**
+- Yedekler sağ altta dört işlem sunar. Popup’taki kırmızı X’in boyutu düzeltildi.
+- Discord RPC, Özelleştirme’nin soluna taşındı ve kimlik ile görsel alanları gizlendi. Kurulum klasörleri düğmesi sağa hizalandı.
+- Gece/gündüz düğmesi Ayarlar başlığına taşındı. Skin Editörü simgeleri ve katman düğmesi güncellendi.
+- Açılışta güncelleme bulunursa yama notlarıyla birlikte kurma veya erteleme seçeneği gösterilir.
+
+## English
+
+**Cinnabar**
+- Stable and Nightly use separate installations. Nightly uses separate game data and shows an experimental-build notice on first selection.
+- Added a download progress line, rounded mod list, and shader ZIP drag and drop.
+
+**Interface**
+- Backups opens four actions from the bottom bar. Fixed the size of the red close button.
+- Moved Discord RPC next to Customization and hid its identity and image fields. Right-aligned the installation folders button.
+- Moved the light/dark toggle into Settings and updated Skin Editor icons and the layer button.
+- When an update is found on startup, the launcher shows release notes and offers to install or postpone it.
+
+<!-- end-release-notes -->
+
 # BedrockLoader v0.17.12
 
 ## Türkçe

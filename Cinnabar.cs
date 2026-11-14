@@ -9,9 +9,11 @@ public sealed partial class MainForm
     const string CinnabarReleases = "https://github.com/cinnabar-mc/cinnabar/releases";
     bool cinnabarMode, cinnabarBusy;
     Button? cinnabarLaunchButton, cinnabarPlayButton;
+    Label? cinnabarChannelLabel;
     int cinnabarPercent = -1;
     bool cinnabarUpdating, cinnabarChecking;
     Version? cinnabarLatest;
+    CinnabarNightlyCatalog.Build? nightlyLatest;
     Version? cinnabarProbedVersion;
     string? cinnabarProbedPath;
     DateTime cinnabarProbedWriteUtc;
@@ -30,6 +32,8 @@ public sealed partial class MainForm
         if (!cinnabarMode || currentPage != "Home" || cinnabarLaunchButton is not { IsDisposed: false } button) return;
         button.Text = CinnabarLaunchText();
         button.Enabled = !cinnabarBusy;
+        button.Parent?.Invalidate();
+        if (cinnabarChannelLabel is { IsDisposed: false } label) label.Text = CinnabarChannelDescription();
         if (cinnabarPlayButton is { IsDisposed: false } play) play.Visible = !cinnabarBusy && CinnabarUpdateAvailable(FindCinnabar());
     }
 
@@ -43,8 +47,9 @@ public sealed partial class MainForm
             executable != null ? T("Launch Cinnabar", "Cinnabar’ı başlat") : T("Install Cinnabar", "Cinnabar’ı yükle");
     }
 
-    bool CinnabarUpdateAvailable(string? executable) => cinnabarLatest != null &&
-        CinnabarInstalledVersion(executable) is { } installed && installed < cinnabarLatest;
+    bool CinnabarUpdateAvailable(string? executable) => settings.CinnabarNightly
+        ? executable != null && nightlyLatest?.Number > settings.CinnabarNightlyBuild
+        : cinnabarLatest != null && CinnabarInstalledVersion(executable) is { } installed && installed < cinnabarLatest;
 
     void CompareGames() => ShowThemedPopup(T("Minecraft and Cinnabar", "Minecraft ve Cinnabar"),
         T("Minecraft Bedrock is the official Mojang game and supports Marketplace, Realms and native Bedrock packs.\n\nCinnabar is an independent Rust client in beta. It has separate local data and supports compatible Java shader packs. Feature and server compatibility can differ.",
@@ -54,8 +59,21 @@ public sealed partial class MainForm
         T("Cinnabar is an independent, unofficial client compatible with Minecraft Bedrock. It has its own launcher and shader settings. It uses Rust and targets better performance. It is in beta and supports compatible Java shader packs through its Enhanced renderer.",
           "Cinnabar, Minecraft Bedrock ile uyumlu, bağımsız ve resmî olmayan bir istemcidir. Kendi başlatıcısı ve shader ayarları vardır. Rust ile geliştiriliyor ve performansı artırmayı hedefliyor. Beta aşamasında. Enhanced görüntüleyici, uyumlu Java shader paketlerini destekliyor."));
 
-    string? FindCinnabar()
+    string? FindCinnabar() => FindCinnabar(settings.CinnabarNightly);
+
+    string? FindCinnabar(bool nightly)
     {
+        if (nightly)
+        {
+            if (string.IsNullOrEmpty(settings.CinnabarNightlyExecutable)) return null;
+            string root = Path.Combine(CinnabarRuntimeRoot, "Nightly");
+            try
+            {
+                string candidate = Path.GetFullPath(settings.CinnabarNightlyExecutable);
+                return candidate.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) && File.Exists(candidate) ? candidate : null;
+            }
+            catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException) { return null; }
+        }
         if (!string.IsNullOrWhiteSpace(settings.CinnabarExecutable) &&
             Path.IsPathFullyQualified(settings.CinnabarExecutable) && File.Exists(settings.CinnabarExecutable)) return settings.CinnabarExecutable;
         if (Directory.Exists(CinnabarRuntimeRoot))
@@ -63,7 +81,10 @@ public sealed partial class MainForm
             var options = new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 5,
                 IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint };
             string? managed = Directory.EnumerateFiles(CinnabarRuntimeRoot, "cinnabar.exe", options)
-                .Where(path => !Path.GetRelativePath(CinnabarRuntimeRoot, path).StartsWith(".staging-", StringComparison.OrdinalIgnoreCase))
+                .Where(path => !Path.GetRelativePath(CinnabarRuntimeRoot, path).Split(Path.DirectorySeparatorChar)
+                    .Any(part => part.StartsWith(".staging-", StringComparison.OrdinalIgnoreCase) ||
+                        part.Equals("Nightly", StringComparison.OrdinalIgnoreCase) ||
+                        part.Equals("Stable", StringComparison.OrdinalIgnoreCase) || part == ".bedrockloader-repair"))
                 .OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault();
             if (managed != null) return managed;
         }
@@ -141,6 +162,19 @@ public sealed partial class MainForm
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(updatesLifetime.Token);
             timeout.CancelAfter(TimeSpan.FromSeconds(15));
+            if (settings.CinnabarNightly)
+            {
+                nightlyLatest = await CinnabarNightlyCatalog.ReadAsync(Http, timeout.Token);
+                string? installedNightly = FindCinnabar();
+                RefreshCinnabarButton();
+                if (!interactive || IsDisposed || !cinnabarMode || currentPage != "Home") return;
+                if (installedNightly != null && !CinnabarUpdateAvailable(installedNightly))
+                    ShowThemedPopup("Cinnabar Nightly", T("The installed build is current.", "Kurulu derleme güncel."));
+                else if (ShowThemedPopup("Cinnabar Nightly", T($"Install experimental build {nightlyLatest.Number}?",
+                    $"Deneysel {nightlyLatest.Number} derlemesi kurulsun mu?"), true, T("Install", "Kur")) == DialogResult.Yes)
+                    await LaunchCinnabarAsync(forceInstall: true);
+                return;
+            }
             using var json = await ReadCinnabarReleaseAsync(timeout.Token);
             string tag = json.RootElement.GetProperty("tag_name").GetString() ?? "";
             if (!TryCinnabarVersion(tag, out cinnabarLatest)) throw new InvalidDataException("Invalid Cinnabar release version.");
@@ -190,6 +224,7 @@ public sealed partial class MainForm
     async Task LaunchCinnabarAsync(bool playOnly = false, bool forceInstall = false)
     {
         if (cinnabarBusy || backupBusy) return;
+        bool nightly = settings.CinnabarNightly;
         cinnabarBusy = true;
         string? installer = null;
         string? staging = null;
@@ -199,7 +234,9 @@ public sealed partial class MainForm
             string? executable = FindCinnabar();
             if (executable != null && !forceInstall && (playOnly || !CinnabarUpdateAvailable(executable)))
             {
-                using var game = Process.Start(new ProcessStartInfo(executable) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(executable)! });
+                var start = new ProcessStartInfo(executable) { UseShellExecute = !nightly, WorkingDirectory = Path.GetDirectoryName(executable)! };
+                if (nightly) start.Environment["CINNABAR_USER_ROOT"] = CinnabarNightlyUserRoot;
+                using var game = Process.Start(start) ?? throw new IOException("Cinnabar did not start.");
                 return;
             }
             cinnabarUpdating = executable != null;
@@ -211,19 +248,15 @@ public sealed partial class MainForm
             timeout.CancelAfter(TimeSpan.FromMinutes(35));
             ShowCinnabarProgress(0);
             UpdateStatus(T("Downloading Cinnabar…", "Cinnabar indiriliyor…"));
-            using var json = await ReadCinnabarReleaseAsync(timeout.Token);
-            var root = json.RootElement;
-            string tag = root.GetProperty("tag_name").GetString() ?? "";
-            const string name = "Cinnabar-x64.msi";
-            var asset = root.GetProperty("assets").EnumerateArray().FirstOrDefault(item => item.GetProperty("name").GetString() == name);
-            if (asset.ValueKind == JsonValueKind.Undefined) throw new InvalidDataException("Cinnabar x64 MSI unavailable.");
-            string? digest = asset.GetProperty("digest").GetString();
-            long size = asset.GetProperty("size").GetInt64();
-            if (tag.Length is 0 or > 100 || digest is not { Length: 71 } || !digest.StartsWith("sha256:", StringComparison.Ordinal) ||
-                !digest[7..].All(Uri.IsHexDigit) || size is <= 0 or > ReleaseUpdates.MaxDownload)
-                throw new InvalidDataException("Invalid Cinnabar release metadata.");
-            var release = new UpdateRelease(new Version(0, 0), tag, "", new Uri(CinnabarReleases),
-                new Uri(CinnabarReleases + "/download/" + Uri.EscapeDataString(tag) + "/" + name), digest[7..], size);
+            CinnabarNightlyCatalog.Build? nightlyBuild = nightly ? await CinnabarNightlyCatalog.ReadAsync(Http, timeout.Token) : null;
+            using var json = nightly ? null : await ReadCinnabarReleaseAsync(timeout.Token);
+            var release = nightlyBuild?.Package ?? ReadStablePackage(json!.RootElement);
+            if (!nightly && CinnabarInstalledVersion(executable) is { } current && release.Version < current)
+                throw new InvalidDataException("Stable downgrade refused.");
+            if (nightlyBuild != null && executable != null && nightlyBuild.Number <= settings.CinnabarNightlyBuild)
+                throw new InvalidDataException("Nightly downgrade or duplicate installation refused.");
+            string tag = release.Tag;
+            long size = release.Size;
             installer = Path.Combine(Path.GetTempPath(), "Cinnabar-" + Guid.NewGuid().ToString("N") + ".msi");
             int reported = -1;
             IProgress<long> progress = new Progress<long>(bytes => { if (cinnabarBusy && !IsDisposed) ShowCinnabarProgress((int)(bytes * 100 / size)); });
@@ -245,7 +278,8 @@ public sealed partial class MainForm
             string tempRoot = Path.GetTempPath();
             extraction = Path.Combine(tempRoot, "cb-" + id[..8]);
             staging = Path.Combine(CinnabarRuntimeRoot, ".staging-" + id);
-            string target = Path.Combine(CinnabarRuntimeRoot, id);
+            string channelRoot = Path.Combine(CinnabarRuntimeRoot, nightly ? "Nightly" : "Stable");
+            string target = Path.Combine(channelRoot, id);
             Directory.CreateDirectory(extraction);
             var command = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "msiexec.exe")) { UseShellExecute = false, CreateNoWindow = true };
             foreach (string arg in new[] { "/a", installer, "/qn", "/norestart", "TARGETDIR=" + extraction }) command.ArgumentList.Add(arg);
@@ -255,9 +289,29 @@ public sealed partial class MainForm
             string extracted = Directory.EnumerateFiles(extraction, "cinnabar.exe", SearchOption.AllDirectories).SingleOrDefault()
                 ?? throw new InvalidDataException("Cinnabar executable missing from the installer.");
             string source = Path.GetDirectoryName(extracted)!;
-            Directory.CreateDirectory(CinnabarRuntimeRoot);
+            Directory.CreateDirectory(channelRoot);
             await Task.Run(() => StageCinnabarRuntime(source, staging), timeout.Token);
+            timeout.Token.ThrowIfCancellationRequested();
+            if (nightlyBuild != null)
+                await ConfirmCinnabarNightlyAsync(Path.Combine(staging, Path.GetFileName(extracted)), nightlyBuild, timeout.Token);
             Directory.Move(staging, target);
+            if (nightlyBuild != null)
+            {
+                var previousNightly = (settings.CinnabarNightlyExecutable, settings.CinnabarNightlyBuild, settings.CinnabarNightlyVersion, settings.CinnabarNightlyDate);
+                settings.CinnabarNightlyExecutable = Path.Combine(target, Path.GetFileName(extracted));
+                settings.CinnabarNightlyBuild = nightlyBuild.Number;
+                settings.CinnabarNightlyVersion = nightlyBuild.Package.Version.ToString();
+                settings.CinnabarNightlyDate = nightlyBuild.Date;
+                try { WriteSettings(); }
+                catch
+                {
+                    (settings.CinnabarNightlyExecutable, settings.CinnabarNightlyBuild, settings.CinnabarNightlyVersion, settings.CinnabarNightlyDate) = previousNightly;
+                    throw;
+                }
+                nightlyLatest = nightlyBuild;
+                UpdateStatus(T("Cinnabar Nightly is ready.", "Cinnabar Gecelik başlatmaya hazır."));
+                return;
+            }
             var previous = (settings.CinnabarExecutable, settings.CinnabarInstalledTag, settings.CinnabarExecutableWriteUtc);
             settings.CinnabarExecutable = Path.Combine(target, Path.GetFileName(extracted));
             settings.CinnabarInstalledTag = tag;
@@ -273,7 +327,10 @@ public sealed partial class MainForm
         }
         catch (Exception ex)
         {
-            if (!IsDisposed) ShowError(ex, T("Cinnabar could not be opened", "Cinnabar açılamadı"));
+            if (!IsDisposed)
+            {
+                ShowError(ex, T("Cinnabar could not be opened", "Cinnabar açılamadı"));
+            }
         }
         finally
         {

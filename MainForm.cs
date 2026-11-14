@@ -208,14 +208,15 @@ public sealed partial class MainForm : Form
             if (languageMenu.Visible) languageMenu.Close();
             else languageMenu.Show(language, new Point(language.Width, language.Height + 6), ToolStripDropDownDirection.BelowLeft);
         };
-        var light = new SymbolButton { Symbol = lightMode ? "sun" : "moon", Width = 36, Height = 36, Tag = "icon", AccessibleName = T("Toggle theme", "Temayı değiştir") };
-        light.Click += (_, _) => { lightMode = !lightMode; settings.LightMode = lightMode; settings.FollowWindowsTheme = false; SaveSettings(); BuildShellRefresh(); };
-        tips.SetToolTip(language, T("Language", "Dil")); tips.SetToolTip(light, T("Toggle theme", "Temayı değiştir"));
-        footer.Controls.Add(light); light.BringToFront();
+        tips.SetToolTip(language, T("Language", "Dil"));
+        var backups = new SymbolButton { Symbol = "backup", Width = 36, Height = 36, Tag = "icon", AccessibleName = T("Backups", "Yedekler") };
+        backups.Click += (_, _) => ShowBackupActions();
+        tips.SetToolTip(backups, T("Backups", "Yedekler"));
+        footer.Controls.Add(backups); backups.BringToFront();
         void ArrangeFooterActions()
         {
-            light.Location = new Point(Math.Max(0, footer.ClientSize.Width - 40), 6);
-            logs.Location = new Point(Math.Max(0, light.Left - logs.Width - 6), 6);
+            backups.Location = new Point(Math.Max(0, footer.ClientSize.Width - 40), 6);
+            logs.Location = new Point(Math.Max(0, backups.Left - logs.Width - 6), 6);
         }
         footer.SizeChanged += (_, _) => ArrangeFooterActions();
         ArrangeFooterActions();
@@ -610,7 +611,7 @@ public sealed partial class MainForm : Form
     {
         AddPageHeading(T("Logs", "Kayıtlar"), T("Actions performed by BedrockLoader are recorded here.", "BedrockLoader ile yapılan işlemler burada kaydedilir."));
         var heading = pageHeadingPanel!;
-        var export = MakeButton(T("Export logs", "Kayıtları dışa aktar"), ExportDiagnostics, 172, "download");
+        var export = MakeButton(T("Export", "Dışa aktar"), ExportDiagnostics, 172, "download");
         export.Height = 32;
         heading.Controls.Add(export);
         void PlaceExport() => export.Location = new Point(Math.Max(0, heading.ClientSize.Width - export.Width), 3);
@@ -697,7 +698,7 @@ public sealed partial class MainForm : Form
 
     void AppDragEnter(object? sender, DragEventArgs e)
     {
-        bool valid = currentPage is "Mods" or "Addons" && e.Data?.GetDataPresent(DataFormats.FileDrop) == true;
+        bool valid = !cinnabarMode && currentPage is ("Mods" or "Addons") && e.Data?.GetDataPresent(DataFormats.FileDrop) == true;
         e.Effect = valid ? DragDropEffects.Copy : DragDropEffects.None;
         if (!valid) return;
         isDragging = true;
@@ -708,7 +709,7 @@ public sealed partial class MainForm : Form
 
     void AppDragOver(object? sender, DragEventArgs e)
     {
-        e.Effect = currentPage is "Mods" or "Addons" && e.Data?.GetDataPresent(DataFormats.FileDrop) == true
+        e.Effect = !cinnabarMode && currentPage is ("Mods" or "Addons") && e.Data?.GetDataPresent(DataFormats.FileDrop) == true
             ? DragDropEffects.Copy : DragDropEffects.None;
     }
 
@@ -716,7 +717,7 @@ public sealed partial class MainForm : Form
     void AppDragDrop(object? sender, DragEventArgs e)
     {
         ResetDropText();
-        if (currentPage is not ("Mods" or "Addons")) return;
+        if (cinnabarMode || currentPage is not ("Mods" or "Addons")) return;
         if (e.Data?.GetData(DataFormats.FileDrop) is not string[] files) return;
         if (currentPage == "Addons") InstallAddonFiles(files);
         else CopyMods(files);
@@ -1362,6 +1363,12 @@ public sealed partial class MainForm : Form
         public string LocalName { get; set; } = "";
         public bool ShowUsage { get; set; }
         public bool FollowWindowsTheme { get; set; } = true;
+        public bool CinnabarNightly { get; set; }
+        public bool CinnabarNightlyNoticeShown { get; set; }
+        public string CinnabarNightlyExecutable { get; set; } = "";
+        public string CinnabarNightlyVersion { get; set; } = "";
+        public long CinnabarNightlyBuild { get; set; }
+        public DateTimeOffset? CinnabarNightlyDate { get; set; }
         public string CinnabarExecutable { get; set; } = "";
         public string CinnabarInstalledTag { get; set; } = "";
         public DateTime CinnabarExecutableWriteUtc { get; set; }

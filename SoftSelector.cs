@@ -137,8 +137,11 @@ public sealed partial class MainForm
         }
         protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
         {
+            string? icon = (e.Item.Tag as SelectorItemIcon)?.Key;
+            int left = icon == null ? 14 : 38;
+            if (icon != null) SoftIcons.Draw(e.Graphics, icon, new RectangleF(14, (e.Item.Height - 17) / 2f, 17, 17), owner.Accent);
             TextRenderer.DrawText(e.Graphics, e.Text, e.TextFont,
-                new Rectangle(14, 0, Math.Max(0, e.Item.Width - 54), e.Item.Height), owner.TextColor,
+                new Rectangle(left, 0, Math.Max(0, e.Item.Width - left - 40), e.Item.Height), owner.TextColor,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             if (e.Item.Tag is string)
@@ -151,6 +154,8 @@ public sealed partial class MainForm
                 SoftIcons.Draw(e.Graphics, "check-mark", new RectangleF(e.Item.Width - 34, (e.Item.Height - 18) / 2f, 18, 18), owner.Accent);
         }
     }
+
+    sealed record SelectorItemIcon(string Key);
 
     // A painted selector avoids the system ComboBox's unthemed arrow surface.
     sealed class SoftSelector : AnimatedRoundButton
@@ -173,6 +178,7 @@ public sealed partial class MainForm
             }
         }
         public object? SelectedItem { get => selectedIndex < 0 ? null : Items[selectedIndex]; set => SelectedIndex = Items.IndexOf(value!); }
+        public string[]? ItemIcons { get; set; }
         public SoftSelector(MainForm owner)
         {
             this.owner = owner;
@@ -196,6 +202,7 @@ public sealed partial class MainForm
             {
                 int index = i;
                 var item = new ToolStripMenuItem(Items[i].ToString()) { AutoSize = false, Size = new Size(Math.Max(Width - 2, 120), 38), Checked = i == selectedIndex };
+                if (ItemIcons is { } icons && i < icons.Length) item.Tag = new SelectorItemIcon(icons[i]);
                 item.Click += (_, _) => menu.SelectAndClose(() => { if (!IsDisposed) { Focus(); SelectedIndex = index; } });
                 menu.Items.Add(item);
             }

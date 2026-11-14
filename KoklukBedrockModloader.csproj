@@ -8,11 +8,12 @@
     <SatelliteResourceLanguages>tr;en</SatelliteResourceLanguages>
     <AssemblyName>BedrockLoader</AssemblyName>
     <RootNamespace>BedrockLoader</RootNamespace>
-    <Version>0.17.12</Version>
+    <Version>0.17.13</Version>
     <ApplicationIcon>Assets\BedrockLoader.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="tests/**/*.cs;tools/**/*.cs" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
     <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
     <EmbeddedResource Include="$(CurseForgeKeyFile)" LogicalName="BedrockLoader.CurseForgeKey" Condition="'$(CurseForgeKeyFile)' != ''" />
     <EmbeddedResource Include="Assets\WolfTransparent.png" LogicalName="BedrockLoader.WolfTransparent.png" />

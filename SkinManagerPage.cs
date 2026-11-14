@@ -41,7 +41,7 @@ public sealed partial class MainForm
         details.Dock = DockStyle.Top; details.Height = 34; details.TextAlign = ContentAlignment.MiddleCenter;
         var stage = new RoundedPanel { Dock = DockStyle.Fill, CornerRadius = 20, Padding = new Padding(8), Tag = "card" };
         stage.Controls.Add(preview);
-        var layer = MakeButton(T("Layers: On", "Katman: Açık"), () => { }, 142, "layers");
+        var layer = MakeButton(T("Layers: On", "Katman: Açık"), () => { }, 164, "layers");
         var motion = MakeButton(T("Motion · Idle", "Hareket · Duruş"), () => { });
         motion.Dock = DockStyle.Fill; motion.Tag = "primary";
         var motionBar = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 38, ColumnCount = 2, RowCount = 1, Tag = "card" };

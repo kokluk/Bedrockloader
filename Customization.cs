@@ -2,7 +2,7 @@ namespace KoklukBedrockModloader;
 
 public sealed partial class MainForm
 {
-    RoundedPopupForm MakeChoiceDialog(string title, string description, IReadOnlyList<PopupToggle> choices, string accept, int columns = 1)
+    RoundedPopupForm MakeChoiceDialog(string title, string description, IReadOnlyList<PopupToggle> choices, string accept, int columns = 1, bool showBack = false)
     {
         int rows = (choices.Count + columns - 1) / columns;
         var dialog = new RoundedPopupForm(Accent)
@@ -15,7 +15,12 @@ public sealed partial class MainForm
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
         var heading = WrappedText(title, 15, true);
         heading.Dock = DockStyle.Fill;
-        grid.Controls.Add(heading, 0, 0);
+        var header = new Panel { Dock = DockStyle.Fill };
+        header.Controls.Add(heading);
+        var close = MakeShortcutClose(dialog);
+        header.Controls.Add(close);
+        close.BringToFront();
+        grid.Controls.Add(header, 0, 0);
         grid.Controls.Add(WrappedText(description), 0, 1);
         grid.GetControlFromPosition(0, 1)!.Dock = DockStyle.Fill;
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 44 * rows));
@@ -25,14 +30,14 @@ public sealed partial class MainForm
         var footer = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = false };
         var ok = MakeButton(accept, () => dialog.DialogResult = DialogResult.OK, 120);
         ok.Tag = "primary";
-        var cancel = MakeButton(T("Cancel", "Vazgeç"), () => dialog.DialogResult = DialogResult.Cancel, 120);
+        var cancel = MakeButton(showBack ? T("Back", "Geri") : T("Cancel", "Vazgeç"), () => dialog.DialogResult = DialogResult.Cancel, 120);
         ok.Margin = cancel.Margin = new Padding(5, 2, 5, 2);
         ok.Height = cancel.Height = 36;
         footer.Controls.AddRange([ok, cancel]);
         grid.Controls.Add(footer, 0, 4);
         dialog.Controls.Add(grid);
         dialog.AcceptButton = ok;
-        dialog.CancelButton = cancel;
+        dialog.CancelButton = showBack ? close : cancel;
         ok.Enabled = choices.Any(choice => choice.Checked) || accept == T("Save", "Kaydet");
         foreach (var choice in choices)
             choice.CheckedChanged += (_, _) => ok.Enabled = choices.Any(item => item.Checked) || accept == T("Save", "Kaydet");
@@ -113,7 +118,7 @@ public sealed partial class MainForm
         RefreshDiscordOptions();
     }
 
-    BackupParts? ChooseBackupParts(bool full, bool importing)
+    BackupParts? ChooseBackupParts(bool full, bool importing, Action? back = null)
     {
         var available = new List<(BackupParts Part, PopupToggle Choice)>
         {
@@ -131,8 +136,13 @@ public sealed partial class MainForm
         using var dialog = MakeChoiceDialog(importing ? T("Choose what to import", "İçe aktarılacakları seç") : T("Choose what to export", "Dışa aktarılacakları seç"),
             importing ? T("Only selected items are read. Existing game files are kept.", "Yalnızca seçilenler okunur. Mevcut oyun dosyaları korunur.")
                 : T("Only selected items are included in the backup.", "Yedeğe yalnızca seçtiğin öğeler eklenir."),
-            available.Select(item => item.Choice).ToArray(), T("Continue", "Devam et"));
-        if (dialog.ShowDialog(this) != DialogResult.OK) return null;
+            available.Select(item => item.Choice).ToArray(), T("Continue", "Devam et"), columns: 2, showBack: back != null);
+        var result = dialog.ShowDialog(this);
+        if (result != DialogResult.OK)
+        {
+            if (result == DialogResult.Cancel && back != null) BeginInvoke(back);
+            return null;
+        }
         BackupParts parts = 0;
         foreach (var item in available)
             if (item.Choice.Checked) parts |= item.Part;
