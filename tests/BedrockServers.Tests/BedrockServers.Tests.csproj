@@ -6,6 +6,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../BedrockServers.cs" Link="BedrockServers.cs" />
+    <Compile Include="../../Features/BedrockServers.cs" Link="BedrockServers.cs" />
   </ItemGroup>
 </Project>

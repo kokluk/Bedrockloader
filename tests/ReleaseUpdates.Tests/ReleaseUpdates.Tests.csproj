@@ -7,6 +7,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../../ReleaseUpdates.cs" Link="ReleaseUpdates.cs" />
+    <Compile Include="../../Features/Updates/ReleaseUpdates.cs" Link="ReleaseUpdates.cs" />
   </ItemGroup>
 </Project>

@@ -5,5 +5,5 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup><Compile Include="../../PackLibrary.cs" Link="PackLibrary.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../../Features/PackLibrary.cs" Link="PackLibrary.cs" /></ItemGroup>
 </Project>
